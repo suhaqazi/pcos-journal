@@ -33,7 +33,7 @@ def retrieve_and_answer(question: str) -> dict:
         "match_documents",
         {
             "query_embedding": question_embedding,
-            "match_threshold": 0.5,
+            "match_threshold": 0.7,
             "match_count": 5
         }
     ).execute()
