@@ -86,9 +86,9 @@ export default function Navbar() {
 
       <nav
         style={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
           alignItems: "center",
-          justifyContent: "space-between",
           padding: "0.875rem 3rem",
           backgroundColor: scrolled
             ? "rgba(255, 232, 228, 0.6)"
@@ -160,6 +160,7 @@ export default function Navbar() {
             display: "flex",
             gap: "0.625rem",
             alignItems: "center",
+            justifyContent: "flex-end",
           }}
         >
           <Link href="/login" className="signin-btn">
