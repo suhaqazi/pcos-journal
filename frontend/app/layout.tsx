@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { Fraunces, Figtree, Gaegu } from "next/font/google";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
-  weight: ["700", "900"],
+  weight: "variable",
   style: ["italic", "normal"],
+  axes: ["opsz"],
 });
 
 const figtree = Figtree({
@@ -36,6 +38,7 @@ export default function RootLayout({
       <body
         className={`${fraunces.variable} ${figtree.variable} ${gaegu.variable}`}
       >
+        <Navbar />
         {children}
       </body>
     </html>
