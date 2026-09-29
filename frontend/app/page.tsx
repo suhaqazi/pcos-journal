@@ -1,5 +1,6 @@
 import Hero from "@/components/landing/Hero";
 import FeatureSection from "@/components/landing/FeatureSection";
+import WhatsInsideSection from "@/components/landing/WhatsInsideSection";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
     >
       <Hero />
       <FeatureSection />
+      <WhatsInsideSection />
     </main>
   );
 }
