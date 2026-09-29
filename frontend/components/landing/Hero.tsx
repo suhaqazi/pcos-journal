@@ -12,6 +12,7 @@ export default function Hero() {
         paddingBottom: "4rem",
         paddingLeft: "1rem",
         paddingRight: "1rem",
+        position: "relative",
       }}
     >
       {/* Cream card */}
@@ -27,8 +28,86 @@ export default function Hero() {
           alignItems: "center",
           textAlign: "center",
           position: "relative",
+          overflow: "visible",
         }}
       >
+        {/* Pushpin — top left overlapping card edge */}
+        <Image
+          src="/pushpin.svg"
+          alt=""
+          width={80}
+          height={100}
+          style={{
+            position: "absolute",
+            top: "-1.5rem",
+            left: "-1.2rem",
+            zIndex: 10,
+            transform: "rotate(-8deg) scaleX(-1)",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Pink sticker — top right */}
+        <Image
+          src="/pinksticker.svg"
+          alt=""
+          width={400}
+          height={80}
+          style={{
+            position: "absolute",
+            top: "-9rem",
+            right: "-11rem",
+            zIndex: 10,
+            transform: "rotate(20deg)",
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Star beside pink sticker — top right */}
+        <Image
+          src="/star.svg"
+          alt=""
+          width={95}
+          height={78}
+          style={{
+            position: "absolute",
+            top: "-1rem",
+            right: "-2.3rem",
+            zIndex: 11,
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Small star — bottom left */}
+        <Image
+          src="/star.svg"
+          alt=""
+          width={110}
+          height={70}
+          style={{
+            position: "absolute",
+            bottom: "1rem",
+            left: "-3.5rem",
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        />
+
+        {/* Button — bottom left */}
+        <Image
+          src="/button.svg"
+          alt=""
+          width={100}
+          height={70}
+          style={{
+            position: "absolute",
+            bottom: "-2rem",
+            left: "-0.5rem",
+            zIndex: 10,
+            pointerEvents: "none",
+          }}
+        />
+
         {/* Pill label */}
         <div
           style={{
