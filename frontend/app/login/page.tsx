@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +16,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [mode, setMode] = useState<"password" | "magic">("password");
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) {
+      router.push("/ask");
+    }
+  }, [user, authLoading, router]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();

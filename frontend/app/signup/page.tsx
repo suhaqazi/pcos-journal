@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/context/AuthContext";
 
 interface PasswordRequirement {
   label: string;
@@ -39,6 +40,14 @@ export default function SignupPage() {
   const requirements = getRequirements(password);
   const allRequirementsMet = requirements.every((r) => r.met);
   const passwordsMatch = password === confirmPassword && confirmPassword !== "";
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) {
+      router.push("/ask");
+    }
+  }, [user, authLoading, router]);
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
