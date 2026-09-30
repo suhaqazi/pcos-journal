@@ -4,10 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +20,29 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setDisplayName(null);
+      return;
+    }
+
+    async function fetchProfile() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user!.id)
+        .single();
+
+      if (data?.full_name) {
+        setDisplayName(data.full_name.split(" ")[0]);
+      } else {
+        setDisplayName(user!.email?.split("@")[0] ?? null);
+      }
+    }
+
+    fetchProfile();
+  }, [user]);
 
   const navLinks = [
     { label: "Ask", href: "/ask" },
@@ -99,7 +126,9 @@ export default function Navbar() {
           top: 0,
           zIndex: 100,
           transition: "background-color 0.3s ease",
-          borderBottom: scrolled ? "1px solid rgba(107, 31, 50, 0.1)" : "none",
+          borderBottom: scrolled
+            ? "0.0625rem solid rgba(107, 31, 50, 0.1)"
+            : "none",
         }}
       >
         {/* Logo + App name */}
@@ -163,12 +192,70 @@ export default function Navbar() {
             justifyContent: "flex-end",
           }}
         >
-          <Link href="/login" className="signin-btn">
-            Sign in
-          </Link>
-          <Link href="/ask" className="getstarted-btn">
-            Get started
-          </Link>
+          {user ? (
+            <>
+              <span
+                style={{
+                  fontFamily: "var(--font-figtree)",
+                  fontSize: "0.875rem",
+                  color: "#6B1F32",
+                  opacity: 0.8,
+                }}
+              >
+                Hi, {displayName}
+              </span>
+              <button
+                onClick={signOut}
+                style={{
+                  fontFamily: "var(--font-figtree)",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  color: "#6B1F32",
+                  backgroundColor: "#FFE8E4",
+                  border: "0.0625rem solid #6B1F32",
+                  padding: "0.5rem 1.25rem",
+                  borderRadius: "999px",
+                  cursor: "pointer",
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                style={{
+                  fontFamily: "var(--font-figtree)",
+                  fontSize: "0.875rem",
+                  fontWeight: "500",
+                  color: "#6B1F32",
+                  backgroundColor: "#FFE8E4",
+                  border: "0.0625rem solid #6B1F32",
+                  padding: "0.5rem 1.25rem",
+                  borderRadius: "999px",
+                  textDecoration: "none",
+                }}
+              >
+                Sign in
+              </Link>
+              <Link
+                href="/signup"
+                style={{
+                  fontFamily: "var(--font-figtree)",
+                  fontSize: "0.875rem",
+                  fontWeight: "600",
+                  color: "#FAF7F2",
+                  background: "radial-gradient(circle, #818B56, #383B2F)",
+                  padding: "0.5rem 1.25rem",
+                  borderRadius: "999px",
+                  textDecoration: "none",
+                }}
+              >
+                Get started
+              </Link>
+            </>
+          )}
         </div>
       </nav>
     </>
