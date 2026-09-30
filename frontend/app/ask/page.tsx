@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 
 const SUGGESTED_QUESTIONS = [
   "Why are my cycles so irregular?",
@@ -28,7 +29,8 @@ export default function AskPage() {
   const [loading, setLoading] = useState(false);
   const [suggested, setSuggested] = useState<string[]>([]);
 
-  const isGuest = true;
+  const { user, loading: authLoading } = useAuth();
+  const isGuest = !user;
 
   useEffect(() => {
     setSuggested(getRandomQuestions());
