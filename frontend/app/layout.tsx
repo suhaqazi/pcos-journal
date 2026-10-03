@@ -16,7 +16,7 @@ const fraunces = Fraunces({
 const figtree = Figtree({
   subsets: ["latin"],
   variable: "--font-figtree",
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const gaegu = Gaegu({
@@ -36,10 +36,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body
-        className={`${fraunces.variable} ${figtree.variable} ${gaegu.variable}`}
-      >
+    <html
+      lang="en"
+      className={`${fraunces.variable} ${figtree.variable} ${gaegu.variable}`}
+    >
+      <body className="font-body text-ink antialiased">
         <AuthProvider>
           <Navbar />
           {children}
