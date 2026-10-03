@@ -1,11 +1,5 @@
 @import "tailwindcss";
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 html {
   scroll-behavior: smooth;
 }
@@ -50,4 +44,12 @@ h1, h2, h3 {
   background-size: 100% 0.8rem;
   padding-bottom: 0.8rem;
   display: inline;
+}
+
+/* Hides the native scrollbar wherever PillScroll draws its own pill */
+.pill-scroll {
+  scrollbar-width: none;
+}
+.pill-scroll::-webkit-scrollbar {
+  display: none;
 }
