@@ -1,4 +1,5 @@
 import os
+import json
 from dotenv import load_dotenv
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from supabase import create_client
@@ -22,10 +23,10 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 def retrieve_and_answer(question: str) -> dict:
     """
     Takes a question, finds relevant chunks from Supabase,
-    sends them to Gemini, returns a cited answer.
+    sends them to Gemini, returns a structured answer.
     """
 
-    # Step 1: Convert the question into an embedding
+    # Step 1: Embed the question
     question_embedding = embeddings_model.embed_query(question)
 
     # Step 2: Search Supabase for the most similar chunks
@@ -33,8 +34,8 @@ def retrieve_and_answer(question: str) -> dict:
         "match_documents",
         {
             "query_embedding": question_embedding,
-            "match_threshold": 0.7,
-            "match_count": 5
+            "match_threshold": 0.65,
+            "match_count": 8
         }
     ).execute()
 
@@ -43,7 +44,16 @@ def retrieve_and_answer(question: str) -> dict:
     # Step 3: If nothing relevant found, refuse to answer
     if not chunks:
         return {
-            "answer": "That's a really valid question. I wasn't able to find specific information about this in the clinical guidelines I have access to right now. It's always a good idea to bring questions like this to your healthcare provider — they can give you the most accurate, personalized answer.",
+            "answer": json.dumps({
+                "summary": "That's a really valid question.",
+                "points": [
+                    {
+                        "heading": "Not enough information",
+                        "body": "I wasn't able to find specific information about this in the guidelines I have access to right now. It's always a good idea to bring questions like this to your healthcare provider."
+                    }
+                ],
+                "closing": "Your provider can give you the most accurate, personalized answer."
+            }),
             "sources": []
         }
 
@@ -56,28 +66,37 @@ def retrieve_and_answer(question: str) -> dict:
         if chunk['source'] not in sources:
             sources.append(chunk['source'])
 
-    # Step 5: Build the prompt
-    prompt = f"""You are Orchid, a warm and knowledgeable health companion for people with PCOS. You speak like a trusted friend who happens to know a lot about PCOS — calm, clear, and never clinical or scary.
+    # Step 5: Prompt
+    prompt = f"""You are Orchid, a warm and knowledgeable health companion for people with PCOS. You speak like a trusted friend who knows a lot about PCOS — calm, clear, never clinical or scary.
 
-Your job is to answer the question below using ONLY the provided clinical guideline excerpts. 
+Answer the question below using ONLY the provided guideline excerpts.
 
-TONE AND FORMAT RULES — follow these exactly:
-- Write in plain, conversational English. No markdown. No asterisks. No bold. No bullet points with dashes or stars.
-- Use short paragraphs — 2 to 4 sentences each. Leave a blank line between paragraphs.
-- If there are multiple points to cover, write each as its own short paragraph with a clear opening sentence.
-- Start with a warm, validating sentence that acknowledges the question — something like "This is such a common concern" or "You're not alone in wondering about this."
-- Use words like "you" and "your body" to make it feel personal and safe.
-- End with one gentle sentence reminding them to talk to their healthcare provider for their specific situation.
-- Never use the words "excerpts", "guidelines", "clinical", or "source" in the answer itself.
-- If the question asks for personal medical advice like dosage, diagnosis, or treatment decisions, explain the general information warmly but remind them that a provider who knows their full picture is the best person to help with the specifics.
-- Do not include any source citation in your answer. Sources are handled separately.
+Return your answer as a JSON object with exactly this structure:
+{{
+  "summary": "One warm sentence that directly answers the core of what was asked. Start with a validating phrase like 'You are not alone in wondering this' or 'This is such a common question'.",
+  "points": [
+    {{
+      "heading": "Short 2-5 word heading for this point",
+      "body": "2-3 warm, plain sentences expanding on this point. Use 'you' and 'your body'. No markdown, no asterisks, no bullet symbols."
+    }}
+  ],
+  "closing": "One gentle sentence reminding them to talk to their healthcare provider for their specific situation."
+}}
 
-CLINICAL GUIDELINE EXCERPTS:
+RULES:
+- Return ONLY the JSON object. No extra text before or after it.
+- Use plain English. No markdown. No asterisks. No bold. No bullet points.
+- Between 2 and 5 points depending on how much information is available.
+- Never use the words 'excerpts', 'guidelines', 'clinical', or 'source' in any field.
+- Do not include any source citation inside the JSON.
+- If the question asks for personal medical advice, give the general information warmly but note that a provider knows their full picture best.
+
+GUIDELINE EXCERPTS:
 {context}
 
 QUESTION: {question}
 
-ANSWER:"""
+JSON ANSWER:"""
 
     # Step 6: Generate answer using Gemini
     result = client.models.generate_content(
@@ -85,8 +104,32 @@ ANSWER:"""
         contents=prompt
     )
 
+    # Step 7: Parse JSON — clean up any markdown fences if present
+    raw = result.text.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+
+    try:
+        parsed = json.loads(raw)
+        answer_str = json.dumps(parsed)
+    except json.JSONDecodeError:
+        # Fallback if Gemini doesn't return valid JSON
+        answer_str = json.dumps({
+            "summary": "Here is what I found about your question.",
+            "points": [
+                {
+                    "heading": "From the guidelines",
+                    "body": raw
+                }
+            ],
+            "closing": "Please consult your healthcare provider for personalized guidance."
+        })
+
     return {
-        "answer": result.text,
+        "answer": answer_str,
         "sources": sources
     }
 
