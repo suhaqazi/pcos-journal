@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import { AnswerData, parseAnswer } from "@/lib/answer";
+import Button from "@/components/ui/Button";
 import PillScroll from "@/components/ui/PillScroll";
 import HistoryCabinet, { HistoryItem } from "@/components/ask/HistoryCabinet";
-import { AnswerData, parseAnswer } from "@/lib/answer";
+import GuestHistoryPrompt from "@/components/ask/GuestHistoryPrompt";
 
 const SUGGESTED_QUESTIONS = [
   "Why are my cycles so irregular?",
@@ -26,6 +27,17 @@ function getRandomQuestions() {
   return [...SUGGESTED_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 4);
 }
 
+const CONNECTION_ERROR: AnswerData = {
+  summary: "Something went wrong.",
+  points: [
+    {
+      heading: "Connection issue",
+      body: "Please check your connection and try again. If the problem persists, the service may be temporarily unavailable.",
+    },
+  ],
+  closing: "Please try again in a moment.",
+};
+
 export default function AskPage() {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<AnswerData | null>(null);
@@ -35,8 +47,7 @@ export default function AskPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
-  const { user } = useAuth();
-  const isGuest = !user;
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     setSuggested(getRandomQuestions());
@@ -89,78 +100,37 @@ export default function AskPage() {
         if (saved) setHistory((prev) => [saved, ...prev]);
       }
     } catch {
-      setAnswer({
-        summary: "Something went wrong.",
-        points: [
-          {
-            heading: "Connection issue",
-            body: "Please check your connection and try again. If the problem persists, the service may be temporarily unavailable.",
-          },
-        ],
-        closing: "Please try again in a moment.",
-      });
+      setAnswer(CONNECTION_ERROR);
     } finally {
       setLoading(false);
     }
   }
 
+  function resetQuestion() {
+    setQuestion("");
+    setAnswer(null);
+    setSources([]);
+    setSuggested(getRandomQuestions());
+  }
+
   return (
-    <main
-      style={{
-        backgroundImage: "url('/wallpaper.svg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-        minHeight: "100vh",
-      }}
-    >
+    <main className="min-h-screen bg-[url('/wallpaper.svg')] bg-cover bg-fixed bg-center bg-no-repeat">
       {/* Hero header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          paddingTop: "4rem",
-          paddingBottom: "4rem",
-        }}
-      >
-        <div style={{ position: "relative", display: "inline-block" }}>
+      <div className="flex justify-center py-16">
+        <div className="relative inline-block">
           <Image
             src="/askpagehead.svg"
             alt=""
             width={720}
             height={180}
-            style={{ display: "block" }}
+            className="block"
           />
-          <div
-            style={{
-              position: "absolute",
-              top: "65%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              textAlign: "center",
-              width: "80%",
-            }}
-          >
-            <h1
-              style={{
-                fontWeight: "900",
-                fontSize: "clamp(1.25rem, 2.5vw, 1.75rem)",
-                color: "#202B0E",
-                marginBottom: "0.5rem",
-                lineHeight: "1.2",
-              }}
-            >
+          <div className="absolute top-[65%] left-1/2 w-4/5 -translate-x-1/2 -translate-y-1/2 text-center">
+            <h1 className="mb-2 text-display leading-tight font-black text-ink">
               Ask the question you've been{" "}
-              <span style={{ color: "#6B1F32" }}>holding</span>
+              <span className="text-burgundy">holding</span>
             </h1>
-            <p
-              style={{
-                fontSize: "clamp(0.75rem, 1.2vw, 0.9375rem)",
-                color: "#6B1F32",
-                lineHeight: "1.5",
-              }}
-            >
+            <p className="text-body leading-normal text-burgundy">
               No jargon, no judgement. Ask anything about PCOS and get a warm,
               plain-language answer — then take the parts that matter to your
               clinician.
@@ -170,163 +140,77 @@ export default function AskPage() {
       </div>
 
       {/* Cork board — one SVG for the whole board, text boxes laid on top.
-          All positions are % of the board, measured from the Figma frame
+          Positions are % of the board, measured from the Figma frame
           (1321.65 × 886), so everything scales together. */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          padding: "0 2rem 7rem",
-        }}
-      >
-        <div style={{ position: "relative", width: "100%", maxWidth: "72rem" }}>
+      <div className="flex justify-center px-8 pb-28">
+        <div className="relative w-full max-w-6xl">
           <Image
             src="/corkboard.svg"
             alt="Cork board"
             width={1322}
             height={886}
             priority
-            style={{ width: "100%", height: "auto", display: "block" }}
+            className="block h-auto w-full"
           />
 
           {/* Whiteboard — question input */}
-          <div
-            style={{
-              position: "absolute",
-              left: "4.99%",
-              top: "7%",
-              width: "42.07%",
-              height: "85.67%",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.875rem",
-            }}
-          >
-            <h2
-              style={{
-                fontWeight: "700",
-                fontSize: "clamp(1rem, 1.8vw, 1.375rem)",
-                color: "#202B0E",
-              }}
-            >
+          <div className="absolute top-[7%] left-[4.99%] flex h-[85.67%] w-[42.07%] flex-col gap-3.5">
+            <h2 className="text-title font-bold text-ink">
               What's on your mind today?
             </h2>
-            <p
-              style={{
-                fontSize: "clamp(0.8125rem, 1.1vw, 0.9375rem)",
-                color: "#5A5A50",
-              }}
-            >
-              Ask anything about PCOS — no question is too small.
+            <p className="text-body text-muted">
+              Ask anything about PCOS - no question is ever too small.
             </p>
 
             <textarea
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="For example: my periods have been all over the place for months — is that something to worry about?"
+              placeholder="For example: my periods have been all over the place for months, is that something to worry about?"
               maxLength={500}
-              style={{
-                fontFamily: "var(--font-gaegu)",
-                fontSize: "clamp(0.9375rem, 1.3vw, 1.0625rem)",
-                padding: "0.75rem",
-                borderRadius: "0.5rem",
-                border: "0.0625rem solid rgba(107, 31, 50, 0.15)",
-                backgroundColor: "transparent",
-                color: "#202B0E",
-                resize: "none",
-                outline: "none",
-                lineHeight: "1.6",
-                flex: 1,
-                minHeight: "5rem",
-              }}
+              className="min-h-20 flex-1 resize-none rounded-lg border border-burgundy/15 bg-transparent p-3 font-hand text-lead leading-relaxed text-ink outline-none"
             />
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                fontSize: "clamp(0.6875rem, 0.9vw, 0.75rem)",
-              }}
-            >
-              <p style={{ color: "#5A5A50" }}>
-                {isGuest &&
+            <div className="flex items-center justify-between text-caption">
+              <p className="text-muted">
+                {!user &&
                   "Guest questions aren't saved. Sign in to keep a history."}
               </p>
               <p
-                style={{ color: question.length > 450 ? "#E24B4A" : "#5A5A50" }}
+                className={question.length > 450 ? "text-error" : "text-muted"}
               >
                 {question.length}/500
               </p>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.375rem",
-              }}
-            >
+            <div className="flex flex-col gap-1.5">
               {suggested.map((q) => (
-                <button
-                  key={q}
-                  onClick={() => setQuestion(q)}
-                  style={{
-                    fontSize: "clamp(0.75rem, 1vw, 0.875rem)",
-                    color: "#6B1F32",
-                    backgroundColor: "transparent",
-                    border: "0.0625rem solid rgba(107, 31, 50, 0.25)",
-                    borderRadius: "999px",
-                    padding: "0.3rem 0.75rem",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
+                <Button key={q} variant="chip" onClick={() => setQuestion(q)}>
                   {q}
-                </button>
+                </Button>
               ))}
             </div>
 
-            <button
+            <Button
               onClick={handleSubmit}
               disabled={loading || !question.trim()}
-              style={{
-                fontSize: "clamp(0.875rem, 1.2vw, 1rem)",
-                fontWeight: "600",
-                color: "#FAF7F2",
-                background: loading
-                  ? "#9A9A90"
-                  : "radial-gradient(circle, #818B56, #383B2F)",
-                padding: "0.625rem 1.5rem",
-                borderRadius: "999px",
-                border: "none",
-                cursor: loading || !question.trim() ? "not-allowed" : "pointer",
-                alignSelf: "flex-start",
-              }}
+              className="self-start"
             >
               {loading ? "Asking..." : "Ask Orchid →"}
-            </button>
+            </Button>
           </div>
 
           {/* Green paper — answer. Pill sits just outside, on the paper's edge. */}
           <PillScroll
             resetKey={answer}
-            className="absolute left-[54.7%] top-[10.05%] h-[44.7%] w-[38.59%]"
+            className="absolute top-[10.05%] left-[54.7%] h-[44.7%] w-[38.59%]"
             contentClassName="flex flex-col gap-3"
             pillClassName="-right-[2.4%] inset-y-0"
           >
             {(!answer || loading) && (
               <p
-                style={{
-                  margin: "auto",
-                  textAlign: "center",
-                  fontFamily: "var(--font-fraunces)",
-                  fontStyle: "italic",
-                  fontWeight: "700",
-                  fontSize: "clamp(0.9375rem, 1.3vw, 1.125rem)",
-                  color: "#6B2D3E",
-                  opacity: loading ? 0.7 : 0.4,
-                }}
+                className={`m-auto text-center font-display text-lead font-bold italic text-burgundy ${
+                  loading ? "opacity-70" : "opacity-40"
+                }`}
               >
                 {loading
                   ? "Checking the guidelines..."
@@ -336,69 +220,30 @@ export default function AskPage() {
 
             {answer && !loading && (
               <>
-                <p
-                  style={{
-                    fontFamily: "var(--font-fraunces)",
-                    fontStyle: "italic",
-                    fontWeight: "700",
-                    fontSize: "clamp(0.9375rem, 1.2vw, 1.0625rem)",
-                    color: "#202B0E",
-                    lineHeight: "1.4",
-                  }}
-                >
+                <p className="font-display text-lead leading-snug font-bold italic text-ink">
                   {answer.summary}
                 </p>
 
                 {answer.points.map((point) => (
-                  <div
-                    key={point.heading}
-                    style={{ fontSize: "clamp(0.8125rem, 1vw, 0.9375rem)" }}
-                  >
-                    <p
-                      style={{
-                        fontWeight: "700",
-                        color: "#6B1F32",
-                        marginBottom: "0.125rem",
-                      }}
-                    >
+                  <div key={point.heading} className="text-body">
+                    <p className="mb-0.5 font-bold text-burgundy">
                       {point.heading}
                     </p>
-                    <p style={{ color: "#202B0E", lineHeight: "1.55" }}>
-                      {point.body}
-                    </p>
+                    <p className="leading-relaxed text-ink">{point.body}</p>
                   </div>
                 ))}
 
-                <p
-                  style={{
-                    fontStyle: "italic",
-                    fontSize: "clamp(0.75rem, 0.9vw, 0.875rem)",
-                    color: "#5A5A50",
-                    lineHeight: "1.4",
-                  }}
-                >
+                <p className="text-small leading-snug text-muted italic">
                   {answer.closing}
                 </p>
 
-                <button
-                  onClick={() => {
-                    setQuestion("");
-                    setAnswer(null);
-                    setSources([]);
-                    setSuggested(getRandomQuestions());
-                  }}
-                  style={{
-                    fontSize: "clamp(0.75rem, 0.9vw, 0.875rem)",
-                    fontWeight: "600",
-                    color: "#6B1F32",
-                    backgroundColor: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
+                <Button
+                  variant="link"
+                  onClick={resetQuestion}
+                  className="self-start"
                 >
                   Ask another →
-                </button>
+                </Button>
               </>
             )}
           </PillScroll>
@@ -406,55 +251,27 @@ export default function AskPage() {
           {/* Pink paper — sources (whole box tilted to match the paper) */}
           <PillScroll
             resetKey={answer}
-            className="absolute left-[55.29%] top-[66.95%] h-[21.74%] w-[36.03%] -rotate-[5.5deg]"
+            className="absolute top-[66.95%] left-[55.29%] h-[21.74%] w-[36.03%] -rotate-[5.5deg]"
             contentClassName="pr-4"
           >
             {answer && !loading ? (
               <>
-                <p
-                  style={{
-                    fontSize: "clamp(0.8125rem, 1vw, 0.9375rem)",
-                    fontWeight: "600",
-                    color: "#202B0E",
-                    marginBottom: "0.25rem",
-                  }}
-                >
-                  Sources
-                </p>
+                <p className="mb-1 text-body font-semibold text-ink">Sources</p>
                 {sources.map((s) => (
                   <p
                     key={s}
-                    style={{
-                      fontSize: "clamp(0.75rem, 0.95vw, 0.875rem)",
-                      color: "#3B4A1A",
-                      lineHeight: "1.5",
-                    }}
+                    className="text-small leading-normal text-ink-olive"
                   >
                     {s}
                   </p>
                 ))}
-                <p
-                  style={{
-                    fontSize: "clamp(0.6875rem, 0.85vw, 0.8125rem)",
-                    color: "#5A5A50",
-                    marginTop: "0.375rem",
-                    fontStyle: "italic",
-                  }}
-                >
+                <p className="mt-1.5 text-caption text-muted italic">
                   For informational purposes only. Always consult your
                   healthcare provider.
                 </p>
               </>
             ) : (
-              <p
-                style={{
-                  textAlign: "center",
-                  marginTop: "1rem",
-                  fontSize: "clamp(0.8125rem, 1vw, 0.9375rem)",
-                  color: "#3B4A1A",
-                  opacity: 0.4,
-                }}
-              >
+              <p className="mt-4 text-center text-body text-ink-olive opacity-40">
                 Sources will appear here
               </p>
             )}
@@ -462,122 +279,13 @@ export default function AskPage() {
         </div>
       </div>
 
-      {/* History section */}
-      <div
-        style={{ maxWidth: "72rem", margin: "0 auto", padding: "0 2rem 6rem" }}
-      >
-        {isGuest ? (
-          <div
-            style={{
-              backgroundColor: "#F1EBD5",
-              borderRadius: "0.75rem 0.75rem 0 0",
-              padding: "2.5rem 3rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "2rem",
-              flexWrap: "wrap",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                position: "absolute",
-                top: "-1.5rem",
-                left: "1rem",
-                backgroundColor: "#F1EBD5",
-                borderRadius: "0.5rem 0.5rem 0 0",
-                padding: "0.375rem 1.25rem",
-                fontFamily: "var(--font-gaegu)",
-                fontSize: "0.875rem",
-                fontWeight: "700",
-                color: "#6B1F32",
-                letterSpacing: "0.05em",
-              }}
-            >
-              YOUR HISTORY
-            </div>
-
-            <div
-              style={{ display: "flex", alignItems: "flex-start", gap: "1rem" }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                style={{ flexShrink: 0, marginTop: "0.25rem" }}
-              >
-                <path
-                  d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-                  stroke="#6B1F32"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div>
-                <p
-                  style={{
-                    fontFamily: "var(--font-fraunces)",
-                    fontStyle: "italic",
-                    fontWeight: "700",
-                    fontSize: "1.25rem",
-                    color: "#6B1F32",
-                    marginBottom: "0.5rem",
-                  }}
-                >
-                  Want to keep your questions?
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.9375rem",
-                    color: "#5A5A50",
-                    lineHeight: "1.6",
-                    maxWidth: "32rem",
-                  }}
-                >
-                  Sign in for a bigger question allowance and a private history
-                  you can revisit any time. Your journal and insights come with
-                  it too.
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <Link
-                href="/login"
-                style={{
-                  fontSize: "0.9375rem",
-                  fontWeight: "600",
-                  color: "#FAF7F2",
-                  background: "radial-gradient(circle, #818B56, #383B2F)",
-                  padding: "0.75rem 2rem",
-                  borderRadius: "999px",
-                  textDecoration: "none",
-                }}
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                style={{
-                  fontSize: "0.9375rem",
-                  fontWeight: "600",
-                  color: "#6B1F32",
-                  backgroundColor: "white",
-                  border: "0.0625rem solid #6B1F32",
-                  padding: "0.75rem 2rem",
-                  borderRadius: "999px",
-                  textDecoration: "none",
-                }}
-              >
-                Create an account
-              </Link>
-            </div>
-          </div>
-        ) : (
+      {/* History — nothing until we know who's signed in, so signed-in
+          users don't see the guest prompt flash first */}
+      <div className="mx-auto max-w-6xl px-8 pb-24">
+        {authLoading ? null : user ? (
           <HistoryCabinet history={history} loading={historyLoading} />
+        ) : (
+          <GuestHistoryPrompt />
         )}
       </div>
     </main>
