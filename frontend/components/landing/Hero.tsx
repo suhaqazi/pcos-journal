@@ -1,238 +1,76 @@
-import Link from "next/link";
 import Image from "next/image";
+import Button from "@/components/ui/Button";
+import TextLink from "@/components/ui/TextLink";
 
 export default function Hero() {
   return (
-    <section
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        paddingTop: "3.5rem",
-        paddingBottom: "4rem",
-        paddingLeft: "1rem",
-        paddingRight: "1rem",
-        position: "relative",
-      }}
-    >
-      {/* Cream card */}
-      <div
-        style={{
-          backgroundColor: "#FFFDF7",
-          borderRadius: "2.5rem",
-          maxWidth: "57.875rem",
-          width: "100%",
-          padding: "4rem 3rem",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          textAlign: "center",
-          position: "relative",
-          overflow: "visible",
-        }}
-      >
-        {/* Pushpin — top left overlapping card edge */}
+    <section className="relative flex flex-col items-center px-4 pt-14 pb-16">
+      <div className="relative flex w-full max-w-[57.875rem] flex-col items-center rounded-card bg-paper px-12 py-16 text-center">
+        {/* Decorations around the card */}
         <Image
           src="/pushpin.svg"
           alt=""
           width={80}
           height={100}
-          style={{
-            position: "absolute",
-            top: "-1.5rem",
-            left: "-1.2rem",
-            zIndex: 10,
-            transform: "rotate(-8deg) scaleX(-1)",
-            pointerEvents: "none",
-          }}
+          className="pointer-events-none absolute -top-6 -left-[1.2rem] z-10 -rotate-8 -scale-x-100"
         />
-
-        {/* Pink sticker — top right */}
         <Image
           src="/pinksticker.svg"
           alt=""
           width={400}
           height={80}
-          style={{
-            position: "absolute",
-            top: "-9rem",
-            right: "-11rem",
-            zIndex: 10,
-            transform: "rotate(20deg)",
-            pointerEvents: "none",
-          }}
+          className="pointer-events-none absolute -top-36 -right-44 z-10 rotate-20"
         />
-
-        {/* Star beside pink sticker — top right */}
         <Image
           src="/star.svg"
           alt=""
           width={95}
           height={78}
-          style={{
-            position: "absolute",
-            top: "-1rem",
-            right: "-2.3rem",
-            zIndex: 11,
-            pointerEvents: "none",
-          }}
+          className="pointer-events-none absolute -top-4 -right-[2.3rem] z-11"
         />
-
-        {/* Small star — bottom left */}
         <Image
           src="/star.svg"
           alt=""
           width={110}
           height={70}
-          style={{
-            position: "absolute",
-            bottom: "1rem",
-            left: "-3.5rem",
-            zIndex: 10,
-            pointerEvents: "none",
-          }}
+          className="pointer-events-none absolute bottom-4 -left-14 z-10"
         />
-
-        {/* Button — bottom left */}
         <Image
           src="/button.svg"
           alt=""
           width={100}
           height={70}
-          style={{
-            position: "absolute",
-            bottom: "-2rem",
-            left: "-0.5rem",
-            zIndex: 10,
-            pointerEvents: "none",
-          }}
+          className="pointer-events-none absolute -bottom-8 -left-2 z-10"
         />
 
-        {/* Pill label */}
-        <div
-          style={{
-            backgroundColor: "#E9EED9",
-            borderRadius: "999px",
-            padding: "0.5rem 1.5rem",
-            fontSize: "0.875rem",
-            fontFamily: "var(--font-figtree)",
-            fontWeight: "600",
-            color: "#202b0e",
-            marginBottom: "2rem",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-          }}
-        >
+        <div className="mb-8 rounded-full bg-sage-light px-6 py-2 text-sm font-semibold tracking-[0.08em] text-ink uppercase">
           Grounded in clinical guidelines
         </div>
 
-        {/* Headline */}
-        <div
-          style={{
-            fontFamily: "var(--font-fraunces)",
-            fontStyle: "italic",
-            fontWeight: "700",
-            fontSize: "clamp(2rem, 4.5vw, 4.0625rem)",
-            lineHeight: "1.1",
-            marginBottom: "3rem",
-            maxWidth: "48.9375rem",
-            position: "relative",
-          }}
-        >
-          <span style={{ color: "#202B0E" }}>Understand your body, </span>
-          <span className="underline-doodle" style={{ color: "#6B1F32" }}>
+        <h1 className="mb-12 max-w-[48.9375rem] text-hero leading-[1.4] font-bold">
+          <span className="text-ink">Understand your body, </span>
+          <span className="underline-doodle text-burgundy">
             one page at a time
           </span>
-        </div>
+        </h1>
 
-        {/* Subtext */}
-        <p
-          style={{
-            fontFamily: "var(--font-figtree)",
-            fontSize: "clamp(1rem, 1.3vw, 1.375rem)",
-            fontWeight: "100",
-            color: "#202B0E",
-            maxWidth: "51.6875rem",
-            lineHeight: "1.5",
-            letterSpacing: "-0.02em",
-            marginBottom: "3rem",
-          }}
-        >
+        <p className="mb-12 max-w-[51.6875rem] text-intro leading-normal font-light tracking-[-0.02em] text-ink">
           Ask Orchid is a warm, private place to ask the questions you've been
           holding, write down what your body is doing, and slowly see the
           patterns underneath. No jargon, no judgement - just your own pages,
           taken seriously.
         </p>
 
-        {/* Buttons */}
-        <div
-          style={{
-            display: "flex",
-            gap: "1rem",
-            alignItems: "center",
-            justifyContent: "center",
-            marginBottom: "1.5rem",
-            flexWrap: "wrap",
-          }}
-        >
-          <Link
-            href="/ask"
-            style={{
-              fontFamily: "var(--font-figtree)",
-              fontSize: "0.9375rem",
-              fontWeight: "600",
-              color: "white",
-              background: "radial-gradient(circle, #818B56, #383B2F)",
-              padding: "0.75rem 2rem",
-              borderRadius: "999px",
-              textDecoration: "none",
-              display: "inline-block",
-            }}
-          >
-            Get Started →
-          </Link>
-
-          <Link
-            href="/login"
-            style={{
-              fontFamily: "var(--font-figtree)",
-              fontSize: "0.9375rem",
-              fontWeight: "600",
-              color: "#6B1F32",
-              backgroundColor: "white",
-              border: "0.0625rem solid #6B1F32",
-              padding: "0.75rem 2rem",
-              borderRadius: "999px",
-              textDecoration: "none",
-              display: "inline-block",
-            }}
-          >
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-4">
+          <Button href="/ask">Get Started →</Button>
+          <Button href="/login" variant="secondary">
             Sign in
-          </Link>
+          </Button>
         </div>
 
-        {/* Guest note */}
-        <p
-          style={{
-            fontFamily: "var(--font-figtree)",
-            fontSize: "0.875rem",
-            fontWeight: "400",
-            color: "#202B0E",
-            opacity: 0.8,
-          }}
-        >
+        <p className="text-sm text-ink/80">
           Not ready for an account?{" "}
-          <Link
-            href="/ask"
-            style={{
-              color: "#6B1F32",
-              fontWeight: "600",
-              textDecoration: "underline",
-              textUnderlineOffset: "0.1875rem",
-            }}
-          >
-            Try Ask without an account
-          </Link>
+          <TextLink href="/ask">Try Ask without an account</TextLink>
         </p>
       </div>
     </section>
