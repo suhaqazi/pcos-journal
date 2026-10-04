@@ -1,6 +1,8 @@
-import Link from "next/link";
+import Image from "next/image";
+import Button from "@/components/ui/Button";
+import SectionIntro from "@/components/landing/SectionIntro";
 
-const cards = [
+const CARDS = [
   {
     title: "Questions answered kindly",
     body: "PCOS comes with a lot of noise. Ask anything - from irregular cycles to hair changes to what a diagnosis even means - and get a clear, supportive answer in seconds.",
@@ -29,183 +31,33 @@ const cards = [
 
 export default function WhatsInsideSection() {
   return (
-    <section
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "6rem 1rem 4rem",
-      }}
-    >
-      {/* Main card — same width and style as FeatureSection */}
-      <div
-        style={{
-          backgroundColor: "#FFFDF7",
-          borderRadius: "2.5rem",
-          maxWidth: "55rem",
-          width: "100%",
-          padding: "1.5rem 3rem 2.3rem",
-          textAlign: "center",
-          position: "relative",
-          marginBottom: "6rem",
-        }}
-      >
-        {/* Top left corner bracket */}
-        <img
-          src="/corner-bracket.svg"
-          alt=""
-          style={{
-            position: "absolute",
-            top: "-0.4rem",
-            left: "-1rem",
-            width: "6rem",
-            height: "6rem",
-            pointerEvents: "none",
-          }}
-        />
+    <section className="flex flex-col items-center px-4 pt-24 pb-16">
+      <SectionIntro eyebrow="What's inside">
+        Everything a <span className="underline-doodle">hard week</span> needs
+      </SectionIntro>
 
-        {/* Bottom right corner bracket */}
-        <img
-          src="/corner-bracket.svg"
-          alt=""
-          style={{
-            position: "absolute",
-            bottom: "-0.4rem",
-            right: "-1rem",
-            width: "6rem",
-            height: "6rem",
-            transform: "rotate(180deg)",
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* heading 1 - small */}
-        <p
-          style={{
-            fontFamily: "var(--font-figtree)",
-            fontSize: "1rem",
-            fontWeight: "300",
-            color: "#202B0E",
-            letterSpacing: "-0.02em",
-            marginBottom: "0.5rem",
-            lineHeight: "2.5",
-          }}
-        >
-          WHAT'S INSIDE
-        </p>
-
-        {/* Headline with underline under "hard week" */}
-        <h2
-          style={{
-            fontFamily: "var(--font-fraunces)",
-            fontStyle: "italic",
-            fontWeight: "900",
-            fontSize: "clamp(2rem, 4vw, 3rem)",
-            color: "#202B0E",
-            marginBottom: "1.5rem",
-            lineHeight: "1.1",
-            letterSpacing: "0.02em",
-          }}
-        >
-          Everything a{" "}
-          <span style={{ position: "relative", display: "inline-block" }}>
-            hard week
-            <img
-              src="/underlinesec2.svg"
-              alt=""
-              style={{
-                position: "absolute",
-                bottom: "-0.5rem",
-                left: "0",
-                width: "110%",
-                height: "1.5rem",
-              }}
-            />
-          </span>{" "}
-          needs
-        </h2>
-      </div>
-
-      {/* 2x2 grid — same maxWidth as FeatureSection cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
-          gap: "3rem",
-          maxWidth: "82rem",
-          width: "100%",
-          padding: "0 2rem",
-        }}
-      >
-        {cards.map((card) => (
+      <div className="grid w-full max-w-[82rem] gap-12 px-8 md:grid-cols-2">
+        {CARDS.map((card) => (
           <div
             key={card.title}
-            style={{
-              backgroundColor: "#FFFDF7",
-              borderRadius: "2.5rem",
-              padding: "1rem 1.9rem 1.5rem",
-              position: "relative",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-            }}
+            className="relative flex flex-col gap-4 rounded-card bg-paper px-[1.9rem] pt-4 pb-6"
           >
-            {/* Red bookmark */}
-            <img
+            <Image
               src="/redbookmark.svg"
               alt=""
-              style={{
-                position: "absolute",
-                top: "-4.4rem",
-                left: "-3rem",
-                width: "12rem",
-                height: "auto",
-                pointerEvents: "none",
-              }}
+              width={192}
+              height={192}
+              className="pointer-events-none absolute -top-[4.4rem] -left-12 h-auto w-48"
             />
-
-            {/* Title */}
-            <h3
-              style={{
-                fontFamily: "var(--font-fraunces)",
-                fontStyle: "italic",
-                fontWeight: "900",
-                fontSize: "clamp(1.125rem, 2vw, 1.375rem)",
-                color: "#202B0E",
-                lineHeight: "1.2",
-                marginTop: "1.5rem",
-              }}
-            >
+            <h3 className="mt-6 text-title leading-tight font-black text-ink">
               {card.title}
             </h3>
-
-            {/* Body */}
-            <p
-              style={{
-                fontFamily: "var(--font-figtree)",
-                fontSize: "0.9375rem",
-                color: "#44403C",
-                lineHeight: "1.6",
-                flexGrow: 1,
-              }}
-            >
+            <p className="grow text-[0.9375rem] leading-relaxed text-stone">
               {card.body}
             </p>
-
-            {/* Link */}
-            <Link
-              href={card.href}
-              style={{
-                fontFamily: "var(--font-figtree)",
-                fontSize: "0.9375rem",
-                fontWeight: "600",
-                color: "#6B1F32",
-                textDecoration: "none",
-                marginTop: "0.5rem",
-              }}
-            >
+            <Button href={card.href} variant="link" className="mt-2 self-start">
               {card.link}
-            </Link>
+            </Button>
           </div>
         ))}
       </div>
