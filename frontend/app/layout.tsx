@@ -16,7 +16,7 @@ const fraunces = Fraunces({
 const figtree = Figtree({
   subsets: ["latin"],
   variable: "--font-figtree",
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const gaegu = Gaegu({

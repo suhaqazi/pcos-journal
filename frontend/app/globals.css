@@ -1,10 +1,8 @@
 @import "tailwindcss";
 
-/* ------------------------------------------------------------------
-   Design tokens - every color and text size is defined once, here.
+/* Design tokens - every color and text size is defined once, here.
    Each one becomes a Tailwind class: --color-burgundy → text-burgundy,
-   bg-burgundy, border-burgundy; --text-body → text-body.
-   ------------------------------------------------------------------ */
+   bg-burgundy, border-burgundy; --text-body → text-body. */
 @theme {
   /* Brand */
   --color-burgundy: #6B1F32;
@@ -27,6 +25,9 @@
   --color-cabinet: #F0F0E0;
   --color-blush: #FFE8E4;
   --color-sage-light: #E9EED9;
+  --color-linen: #F5F0E8;
+  --color-linen-dark: #EDE8DE;
+  --color-sand: #E0D8C8;
 
   /* States */
   --color-disabled: #9A9A90;
@@ -39,6 +40,12 @@
   --text-lead: clamp(0.9375rem, 1.2vw, 1.0625rem);
   --text-title: clamp(1rem, 1.8vw, 1.375rem);
   --text-display: clamp(1.25rem, 2.5vw, 1.75rem);
+  --text-intro: clamp(0.9375rem, 1.4vw, 1.25rem);
+  --text-headline: clamp(2rem, 4vw, 3rem);
+  --text-hero: clamp(2rem, 4.5vw, 4.0625rem);
+
+  /* Shapes */
+  --radius-card: 2.5rem;
 }
 
 /* Fonts point at the variables next/font creates in layout.tsx.
@@ -49,9 +56,7 @@
   --font-hand: var(--font-gaegu);
 }
 
-/* ------------------------------------------------------------------
-   Base styles — defaults for plain HTML elements
-   ------------------------------------------------------------------ */
+/* Base styles — defaults for plain HTML elements */
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -63,9 +68,7 @@
   }
 }
 
-/* ------------------------------------------------------------------
-   Custom utilities — used like any Tailwind class
-   ------------------------------------------------------------------ */
+/* Custom utilities — used like any Tailwind class */
 
 /* Hand-drawn underline under headings */
 @utility underline-doodle {
@@ -97,10 +100,8 @@
   }
 }
 
-/* ------------------------------------------------------------------
-   LEGACY — old variable names, kept so un-migrated pages don't break.
-   Delete this block in the final cleanup step.
-   ------------------------------------------------------------------ */
+/* LEGACY — old variable names, kept so un-migrated pages don't break.
+    - Delete this block in the final cleanup step. */
 :root {
   --cream: #FAF7F2;
   --cream-dark: #F0EBE1;
