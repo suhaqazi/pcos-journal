@@ -1,11 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
+import Logo from "@/components/layout/Logo";
+import Button from "@/components/ui/Button";
+
+const NAV_LINKS = [
+  { label: "Ask", href: "/ask" },
+  { label: "Journal", href: "/journal" },
+  { label: "Insights", href: "/insights" },
+  { label: "Resources", href: "/resources" },
+];
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -14,13 +22,12 @@ export default function Navbar() {
   const { user, signOut } = useAuth();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // First name from the profile, falling back to the email prefix
   useEffect(() => {
     if (!user) {
       setDisplayName(null);
@@ -34,230 +41,65 @@ export default function Navbar() {
         .eq("id", user!.id)
         .single();
 
-      if (data?.full_name) {
-        setDisplayName(data.full_name.split(" ")[0]);
-      } else {
-        setDisplayName(user!.email?.split("@")[0] ?? null);
-      }
+      setDisplayName(
+        data?.full_name
+          ? data.full_name.split(" ")[0]
+          : (user!.email?.split("@")[0] ?? null),
+      );
     }
 
     fetchProfile();
   }, [user]);
 
-  const navLinks = [
-    { label: "Ask", href: "/ask" },
-    { label: "Journal", href: "/journal" },
-    { label: "Insights", href: "/insights" },
-    { label: "Resources", href: "/resources" },
-  ];
-
   return (
-    <>
-      <style>{`
-        .nav-link {
-          font-family: var(--font-figtree);
-          font-size: 0.875rem;
-          font-weight: 800;
-          color: #6B1F32;
-          text-decoration: none;
-          padding: 0.375rem 0.875rem;
-          border-radius: 999px;
-          transition: all 0.2s ease;
-          background-color: transparent;
-        }
-        .nav-link:hover {
-          color: #818B56;
-        }
-        .nav-link.active {
-          color: #FAF7F2;
-          background: radial-gradient(circle at center, #818B56, #383B2F);
-        }
-        .signin-btn {
-          font-family: var(--font-figtree);
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #6B1F32;
-          background-color: #FFE8E4;
-          border: 1px solid #6B1F32;
-          padding: 0.5rem 1.25rem;
-          border-radius: 999px;
-          cursor: pointer;
-          text-decoration: none;
-          transition: all 0.25s ease;
-          display: inline-block;
-        }
-        .signin-btn:hover {
-          background-color: #6B1F32;
-          color: #FFE8E4;
-          transform: translateY(-0.0625rem);
-        }
-        .getstarted-btn {
-          font-family: var(--font-figtree);
-          font-size: 0.875rem;
-          font-weight: 500;
-          color: #FAF7F2;
-          background: radial-gradient(circle at center, #818B56, #383B2F);
-          border: none;
-          padding: 0.5rem 1.25rem;
-          border-radius: 999px;
-          cursor: pointer;
-          text-decoration: none;
-          transition: all 0.25s ease;
-          display: inline-block;
-        }
-        .getstarted-btn:hover {
-          opacity: 0.88;
-          transform: translateY(-0.0625rem);
-        }
-      `}</style>
+    <nav
+      className={`sticky top-0 z-100 grid grid-cols-[1fr_auto_1fr] items-center border-b px-12 py-3.5 backdrop-blur-sm transition-colors duration-300 ${
+        scrolled
+          ? "border-burgundy/10 bg-blush/60"
+          : "border-transparent bg-blush/92"
+      }`}
+    >
+      <Logo size="sm" />
 
-      <nav
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
-          alignItems: "center",
-          padding: "0.875rem 3rem",
-          backgroundColor: scrolled
-            ? "rgba(255, 232, 228, 0.6)"
-            : "rgba(255, 232, 228, 0.92)",
-          backdropFilter: "blur(0.5rem)",
-          WebkitBackdropFilter: "blur(0.5rem)",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-          transition: "background-color 0.3s ease",
-          borderBottom: scrolled
-            ? "0.0625rem solid rgba(107, 31, 50, 0.1)"
-            : "none",
-        }}
-      >
-        {/* Logo + App name */}
-        <Link
-          href="/"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.625rem",
-            textDecoration: "none",
-          }}
-        >
-          <Image
-            src="/orchid.svg"
-            alt="Ask Orchid logo"
-            width={32}
-            height={32}
-          />
-          <span
-            style={{
-              fontFamily: "var(--font-fraunces)",
-              fontStyle: "italic",
-              fontWeight: "900",
-              fontSize: "1.25rem",
-              color: "#6B1F32",
-              letterSpacing: "-0.02rem",
-            }}
-          >
-            Ask Orchid
-          </span>
-        </Link>
+      <div className="flex items-center gap-1">
+        {NAV_LINKS.map((link) => {
+          const isActive = pathname === link.href;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={isActive ? "page" : undefined}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-bold transition-all duration-200 ${
+                isActive
+                  ? "bg-radial from-olive to-olive-dark text-cream"
+                  : "text-burgundy hover:text-olive"
+              }`}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
+      </div>
 
-        {/* Nav links */}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.25rem",
-            alignItems: "center",
-          }}
-        >
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.label}
-                href={link.href}
-                className={`nav-link ${isActive ? "active" : ""}`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Auth buttons */}
-        <div
-          style={{
-            display: "flex",
-            gap: "0.625rem",
-            alignItems: "center",
-            justifyContent: "flex-end",
-          }}
-        >
-          {user ? (
-            <>
-              <span
-                style={{
-                  fontFamily: "var(--font-figtree)",
-                  fontSize: "0.875rem",
-                  color: "#6B1F32",
-                  opacity: 0.8,
-                }}
-              >
-                Hi, {displayName}
-              </span>
-              <button
-                onClick={signOut}
-                style={{
-                  fontFamily: "var(--font-figtree)",
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  color: "#6B1F32",
-                  backgroundColor: "#FFE8E4",
-                  border: "0.0625rem solid #6B1F32",
-                  padding: "0.5rem 1.25rem",
-                  borderRadius: "999px",
-                  cursor: "pointer",
-                }}
-              >
-                Sign out
-              </button>
-            </>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                style={{
-                  fontFamily: "var(--font-figtree)",
-                  fontSize: "0.875rem",
-                  fontWeight: "500",
-                  color: "#6B1F32",
-                  backgroundColor: "#FFE8E4",
-                  border: "0.0625rem solid #6B1F32",
-                  padding: "0.5rem 1.25rem",
-                  borderRadius: "999px",
-                  textDecoration: "none",
-                }}
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/signup"
-                style={{
-                  fontFamily: "var(--font-figtree)",
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  color: "#FAF7F2",
-                  background: "radial-gradient(circle, #818B56, #383B2F)",
-                  padding: "0.5rem 1.25rem",
-                  borderRadius: "999px",
-                  textDecoration: "none",
-                }}
-              >
-                Get started
-              </Link>
-            </>
-          )}
-        </div>
-      </nav>
-    </>
+      <div className="flex items-center justify-end gap-2.5">
+        {user ? (
+          <>
+            <span className="text-sm text-burgundy/80">Hi, {displayName}</span>
+            <Button variant="secondary" size="sm" onClick={signOut}>
+              Sign out
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button href="/login" variant="secondary" size="sm">
+              Sign in
+            </Button>
+            <Button href="/signup" size="sm">
+              Get started
+            </Button>
+          </>
+        )}
+      </div>
+    </nav>
   );
 }
