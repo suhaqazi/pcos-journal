@@ -17,6 +17,7 @@
   --color-ink: #202B0E;
   --color-ink-olive: #3B4A1A;
   --color-muted: #5A5A50;
+  --color-stone: #44403C;
 
   /* Surfaces */
   --color-cream: #FAF7F2;
@@ -24,6 +25,8 @@
   --color-paper: #FFFDF7;
   --color-parchment: #F1EBD5;
   --color-cabinet: #F0F0E0;
+  --color-blush: #FFE8E4;
+  --color-sage-light: #E9EED9;
 
   /* States */
   --color-disabled: #9A9A90;
