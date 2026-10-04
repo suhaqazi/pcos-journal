@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Fraunces, Figtree, Gaegu } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 import { AuthProvider } from "@/context/AuthContext";
 
 const fraunces = Fraunces({

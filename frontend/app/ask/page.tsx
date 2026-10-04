@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import PillScroll from "@/components/PillScroll";
+import PillScroll from "@/components/ui/PillScroll";
 
 const SUGGESTED_QUESTIONS = [
   "Why are my cycles so irregular?",
