@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import PillScroll from "@/components/ui/PillScroll";
+import HistoryCabinet, { HistoryItem } from "@/components/ask/HistoryCabinet";
+import { AnswerData, parseAnswer } from "@/lib/answer";
 
 const SUGGESTED_QUESTIONS = [
   "Why are my cycles so irregular?",
@@ -20,41 +22,8 @@ const SUGGESTED_QUESTIONS = [
   "What are the Rotterdam criteria?",
 ];
 
-const FOLDER_COLORS = [
-  { bg: "#FFE8E4", border: "#E8C4BC", text: "#6B1F32" },
-  { bg: "#E9EED9", border: "#C8D4A8", text: "#202B0E" },
-  { bg: "#EEF1D0", border: "#C8D4A8", text: "#3B4A1A" },
-  { bg: "#F5E6EA", border: "#D4B0BC", text: "#6B1F32" },
-  { bg: "#FFFDF7", border: "#E0D8C8", text: "#202B0E" },
-];
-
-interface AnswerData {
-  summary: string;
-  points: { heading: string; body: string }[];
-  closing: string;
-}
-
-function parseAnswer(raw: string): AnswerData | null {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
 function getRandomQuestions() {
   return [...SUGGESTED_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 4);
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function folderColor(index: number) {
-  return FOLDER_COLORS[index % FOLDER_COLORS.length];
 }
 
 export default function AskPage() {
@@ -63,18 +32,11 @@ export default function AskPage() {
   const [sources, setSources] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [suggested, setSuggested] = useState<string[]>([]);
-  const [activeFolder, setActiveFolder] = useState<number | null>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   const { user } = useAuth();
   const isGuest = !user;
-
-  // The opened history item, worked out once instead of searching repeatedly
-  const activeIndex = history.findIndex((h) => h.id === activeFolder);
-  const activeItem = activeIndex >= 0 ? history[activeIndex] : null;
-  const activeColor = folderColor(Math.max(activeIndex, 0));
-  const activeAnswer = activeItem ? parseAnswer(activeItem.answer) : null;
 
   useEffect(() => {
     setSuggested(getRandomQuestions());
@@ -349,19 +311,9 @@ export default function AskPage() {
           {/* Green paper — answer. Pill sits just outside, on the paper's edge. */}
           <PillScroll
             resetKey={answer}
-            pillRight="-2.4%"
-            style={{
-              position: "absolute",
-              left: "54.7%",
-              top: "10.05%",
-              width: "38.59%",
-              height: "44.7%",
-            }}
-            contentStyle={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.75rem",
-            }}
+            className="absolute left-[54.7%] top-[10.05%] h-[44.7%] w-[38.59%]"
+            contentClassName="flex flex-col gap-3"
+            pillClassName="-right-[2.4%] inset-y-0"
           >
             {(!answer || loading) && (
               <p
@@ -454,15 +406,8 @@ export default function AskPage() {
           {/* Pink paper — sources (whole box tilted to match the paper) */}
           <PillScroll
             resetKey={answer}
-            style={{
-              position: "absolute",
-              left: "55.29%",
-              top: "66.95%",
-              width: "36.03%",
-              height: "21.74%",
-              transform: "rotate(-5.5deg)",
-            }}
-            contentStyle={{ paddingRight: "1rem" }}
+            className="absolute left-[55.29%] top-[66.95%] h-[21.74%] w-[36.03%] -rotate-[5.5deg]"
+            contentClassName="pr-4"
           >
             {answer && !loading ? (
               <>
@@ -632,308 +577,7 @@ export default function AskPage() {
             </div>
           </div>
         ) : (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1.5fr",
-              gap: "2rem",
-              alignItems: "start",
-            }}
-          >
-            {/* Left — scrollable folder stack */}
-            <div>
-              <p
-                style={{
-                  fontFamily: "var(--font-gaegu)",
-                  fontSize: "1rem",
-                  fontWeight: "700",
-                  color: "#FFFDF7",
-                  letterSpacing: "0.05em",
-                  marginBottom: "1rem",
-                  opacity: 0.8,
-                }}
-              >
-                Your question history
-              </p>
-
-              {historyLoading ? (
-                <p
-                  style={{
-                    fontSize: "0.875rem",
-                    color: "#FFFDF7",
-                    opacity: 0.5,
-                  }}
-                >
-                  Loading your history...
-                </p>
-              ) : (
-                history.length > 0 && (
-                  <PillScroll
-                    maxHeight="32rem"
-                    contentStyle={{
-                      paddingTop: "1rem",
-                      paddingRight: "1.25rem",
-                    }}
-                  >
-                    {history.map((item, index) => {
-                      const isActive = activeFolder === item.id;
-                      const color = folderColor(index);
-                      return (
-                        <div
-                          key={item.id}
-                          onClick={() => setActiveFolder(item.id)}
-                          style={{
-                            position: "relative",
-                            marginBottom: "-3rem",
-                            cursor: "pointer",
-                            zIndex: history.length - index,
-                            transition: "transform 0.2s ease",
-                            transform: isActive
-                              ? "translateY(-0.5rem)"
-                              : "none",
-                          }}
-                        >
-                          {/* Folder tab */}
-                          <div
-                            style={{
-                              position: "absolute",
-                              top: 0,
-                              left: "1.5rem",
-                              backgroundColor: color.bg,
-                              borderTop: `0.0625rem solid ${color.border}`,
-                              borderLeft: `0.0625rem solid ${color.border}`,
-                              borderRight: `0.0625rem solid ${color.border}`,
-                              borderRadius: "0.5rem 0.5rem 0 0",
-                              padding: "0.25rem 1rem",
-                              zIndex: 1,
-                              fontFamily: "var(--font-gaegu)",
-                              fontSize: "0.9375rem",
-                              fontWeight: "700",
-                              color: color.text,
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {formatDate(item.created_at)}
-                          </div>
-
-                          {/* Folder body */}
-                          <div
-                            style={{
-                              backgroundColor: color.bg,
-                              border: `0.0625rem solid ${color.border}`,
-                              borderRadius: "0 0.75rem 0.75rem 0.75rem",
-                              padding: "1.75rem 1.25rem 4rem",
-                              marginTop: "1.5rem",
-                              boxShadow: isActive
-                                ? "0 0.25rem 1rem rgba(0,0,0,0.15)"
-                                : "0 0.125rem 0.5rem rgba(0,0,0,0.08)",
-                            }}
-                          >
-                            <p
-                              style={{
-                                fontFamily: "var(--font-fraunces)",
-                                fontStyle: "italic",
-                                fontWeight: "700",
-                                fontSize: "1rem",
-                                color: color.text,
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                              }}
-                            >
-                              {item.question}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {/* Space so the last folder isn't hidden by the overlap */}
-                    <div style={{ height: "4rem" }} />
-                  </PillScroll>
-                )
-              )}
-            </div>
-
-            {/* Right — opened file content */}
-            <div style={{ position: "sticky", top: "6rem" }}>
-              {activeItem ? (
-                <div style={{ position: "relative" }}>
-                  {/* File tab */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "-1.75rem",
-                      left: "1.5rem",
-                      backgroundColor: activeColor.bg,
-                      borderTop: `0.0625rem solid ${activeColor.border}`,
-                      borderLeft: `0.0625rem solid ${activeColor.border}`,
-                      borderRight: `0.0625rem solid ${activeColor.border}`,
-                      borderRadius: "0.5rem 0.5rem 0 0",
-                      padding: "0.375rem 1.25rem",
-                      fontFamily: "var(--font-gaegu)",
-                      fontSize: "1rem",
-                      fontWeight: "700",
-                      color: activeColor.text,
-                    }}
-                  >
-                    {formatDate(activeItem.created_at)}
-                  </div>
-
-                  {/* File body */}
-                  <PillScroll
-                    resetKey={activeFolder}
-                    maxHeight="32rem"
-                    pillRight="0.625rem"
-                    trackInset="1rem"
-                    style={{
-                      backgroundColor: "#F2ECD6",
-                      border: `0.0625rem solid ${activeColor.border}`,
-                      borderRadius: "0 0.75rem 0.75rem 0.75rem",
-                    }}
-                    contentStyle={{ padding: "2rem 2.5rem 2rem 2rem" }}
-                  >
-                    <p
-                      style={{
-                        fontFamily: "var(--font-fraunces)",
-                        fontStyle: "italic",
-                        fontWeight: "700",
-                        fontSize: "1.125rem",
-                        color: activeColor.text,
-                        marginBottom: "1rem",
-                        lineHeight: "1.3",
-                      }}
-                    >
-                      {activeItem.question}
-                    </p>
-
-                    {activeAnswer ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "0.75rem",
-                        }}
-                      >
-                        <p
-                          style={{
-                            fontFamily: "var(--font-fraunces)",
-                            fontStyle: "italic",
-                            fontWeight: "700",
-                            fontSize: "1rem",
-                            color: activeColor.text,
-                            lineHeight: "1.4",
-                          }}
-                        >
-                          {activeAnswer.summary}
-                        </p>
-                        {activeAnswer.points.map((point) => (
-                          <div
-                            key={point.heading}
-                            style={{ fontSize: "0.875rem" }}
-                          >
-                            <p
-                              style={{
-                                fontWeight: "700",
-                                color: "#6B1F32",
-                                marginBottom: "0.25rem",
-                              }}
-                            >
-                              {point.heading}
-                            </p>
-                            <p style={{ color: "#3B3B35", lineHeight: "1.6" }}>
-                              {point.body}
-                            </p>
-                          </div>
-                        ))}
-                        <p
-                          style={{
-                            fontStyle: "italic",
-                            fontSize: "0.8125rem",
-                            color: activeColor.text,
-                            opacity: 0.6,
-                          }}
-                        >
-                          {activeAnswer.closing}
-                        </p>
-                      </div>
-                    ) : (
-                      <p
-                        style={{
-                          fontSize: "0.9375rem",
-                          color: "#3B3B35",
-                          lineHeight: "1.7",
-                        }}
-                      >
-                        {activeItem.answer}
-                      </p>
-                    )}
-
-                    {activeItem.sources?.length > 0 && (
-                      <div
-                        style={{
-                          marginTop: "1rem",
-                          paddingTop: "0.75rem",
-                          borderTop: `0.0625rem solid ${activeColor.border}`,
-                          fontSize: "0.75rem",
-                        }}
-                      >
-                        <p
-                          style={{
-                            fontWeight: "600",
-                            color: activeColor.text,
-                            opacity: 0.7,
-                            marginBottom: "0.25rem",
-                          }}
-                        >
-                          Source
-                        </p>
-                        <p style={{ color: "#3B3B35", lineHeight: "1.5" }}>
-                          {activeItem.sources[0]}
-                        </p>
-                      </div>
-                    )}
-
-                    <p
-                      style={{
-                        fontSize: "0.6875rem",
-                        color: "#5A5A50",
-                        marginTop: "1rem",
-                        opacity: 0.6,
-                        fontStyle: "italic",
-                      }}
-                    >
-                      For informational purposes only. Always consult your
-                      healthcare provider.
-                    </p>
-                  </PillScroll>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: "12rem",
-                    backgroundColor: "rgba(255,253,247,0.1)",
-                    borderRadius: "0.75rem",
-                    border: "0.0625rem dashed rgba(255,253,247,0.3)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "var(--font-gaegu)",
-                      fontSize: "1.125rem",
-                      color: "#FFFDF7",
-                      opacity: 0.4,
-                      textAlign: "center",
-                    }}
-                  >
-                    Select a folder to read your answer
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+          <HistoryCabinet history={history} loading={historyLoading} />
         )}
       </div>
     </main>
