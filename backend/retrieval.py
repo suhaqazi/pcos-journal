@@ -6,15 +6,10 @@ from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from supabase import create_client
+
+from supabase_client import supabase
 
 load_dotenv()
-
-# Initialize connections
-supabase = create_client(
-    os.getenv("SUPABASE_URL"),
-    os.getenv("SUPABASE_KEY")
-)
 
 embeddings_model = GoogleGenerativeAIEmbeddings(
     model="models/gemini-embedding-001",
@@ -42,20 +37,24 @@ NOT_FOUND_ANSWER = {
 }
 
 
-def retrieve_and_answer(question: str) -> dict:
-    """
-    Takes a question, finds relevant chunks from Supabase,
-    sends them to Gemini, returns a structured answer.
-    Raises ModelUnavailableError if Gemini can't be reached.
-    """
-
-    # Step 1: Embed the question
+def embed_question(question: str) -> list[float]:
+    """Turns a question into a vector. Raises ModelUnavailableError on failure."""
     try:
-        question_embedding = embeddings_model.embed_query(question)
+        return embeddings_model.embed_query(question)
     except Exception as e:
         # LangChain wraps every Gemini error in its own type, so catch broadly
         # here, but only around this one call
         raise ModelUnavailableError("Embedding failed") from e
+
+
+def generate_answer(question: str, question_embedding: list[float]) -> dict:
+    """
+    Finds relevant guideline chunks for an already-embedded question and
+    asks Gemini to answer. Returns {answer, sources, cacheable}.
+    cacheable is False for answers that shouldn't be reused (nothing found,
+    or Gemini returned broken JSON).
+    Raises ModelUnavailableError if Gemini can't be reached.
+    """
 
     # Step 2: Search Supabase for the most similar chunks
     response = supabase.rpc(
@@ -71,7 +70,7 @@ def retrieve_and_answer(question: str) -> dict:
 
     # Step 3: If nothing relevant found, refuse to answer (no Gemini cost)
     if not chunks:
-        return {"answer": json.dumps(NOT_FOUND_ANSWER), "sources": []}
+        return {"answer": json.dumps(NOT_FOUND_ANSWER), "sources": [], "cacheable": False}
 
     # Step 4: Build context from retrieved chunks
     context = ""
@@ -125,21 +124,20 @@ QUESTION: {question}"""
     # Step 7: Parse, with a safe fallback just in case
     raw = (result.text or "").strip()
     try:
-        answer_str = json.dumps(json.loads(raw))
+        return {"answer": json.dumps(json.loads(raw)), "sources": sources, "cacheable": True}
     except json.JSONDecodeError:
-        answer_str = json.dumps({
+        fallback = json.dumps({
             "summary": "Here is what I found about your question.",
             "points": [{"heading": "From the guidelines", "body": raw}],
             "closing": "Please consult your healthcare provider for personalized guidance."
         })
-
-    return {"answer": answer_str, "sources": sources}
+        return {"answer": fallback, "sources": sources, "cacheable": False}
 
 
 # Test it
 if __name__ == "__main__":
     test_question = "What are the Rotterdam criteria for diagnosing PCOS?"
     print(f"Question: {test_question}\n")
-    result = retrieve_and_answer(test_question)
+    result = generate_answer(test_question, embed_question(test_question))
     print(f"Answer: {result['answer']}\n")
     print(f"Sources: {result['sources']}")
