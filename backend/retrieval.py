@@ -1,9 +1,12 @@
-import os
 import json
+import os
+
 from dotenv import load_dotenv
+from google import genai
+from google.genai import errors as genai_errors
+from google.genai import types
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from supabase import create_client
-from google import genai
 
 load_dotenv()
 
@@ -20,14 +23,39 @@ embeddings_model = GoogleGenerativeAIEmbeddings(
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+GENERATION_MODEL = "gemini-3.6-flash"
+
+
+class ModelUnavailableError(Exception):
+    """Gemini couldn't be reached: out of credits, rate-limited, or down."""
+
+
+NOT_FOUND_ANSWER = {
+    "summary": "That's a really valid question.",
+    "points": [
+        {
+            "heading": "Not enough information",
+            "body": "I wasn't able to find specific information about this in the guidelines I have access to right now. It's always a good idea to bring questions like this to your healthcare provider."
+        }
+    ],
+    "closing": "Your provider can give you the most accurate, personalized answer."
+}
+
+
 def retrieve_and_answer(question: str) -> dict:
     """
     Takes a question, finds relevant chunks from Supabase,
     sends them to Gemini, returns a structured answer.
+    Raises ModelUnavailableError if Gemini can't be reached.
     """
 
     # Step 1: Embed the question
-    question_embedding = embeddings_model.embed_query(question)
+    try:
+        question_embedding = embeddings_model.embed_query(question)
+    except Exception as e:
+        # LangChain wraps every Gemini error in its own type, so catch broadly
+        # here, but only around this one call
+        raise ModelUnavailableError("Embedding failed") from e
 
     # Step 2: Search Supabase for the most similar chunks
     response = supabase.rpc(
@@ -41,21 +69,9 @@ def retrieve_and_answer(question: str) -> dict:
 
     chunks = response.data
 
-    # Step 3: If nothing relevant found, refuse to answer
+    # Step 3: If nothing relevant found, refuse to answer (no Gemini cost)
     if not chunks:
-        return {
-            "answer": json.dumps({
-                "summary": "That's a really valid question.",
-                "points": [
-                    {
-                        "heading": "Not enough information",
-                        "body": "I wasn't able to find specific information about this in the guidelines I have access to right now. It's always a good idea to bring questions like this to your healthcare provider."
-                    }
-                ],
-                "closing": "Your provider can give you the most accurate, personalized answer."
-            }),
-            "sources": []
-        }
+        return {"answer": json.dumps(NOT_FOUND_ANSWER), "sources": []}
 
     # Step 4: Build context from retrieved chunks
     context = ""
@@ -84,7 +100,6 @@ Return your answer as a JSON object with exactly this structure:
 }}
 
 RULES:
-- Return ONLY the JSON object. No extra text before or after it.
 - Use plain English. No markdown. No asterisks. No bold. No bullet points.
 - Between 2 and 5 points depending on how much information is available.
 - Never use the words 'excerpts', 'guidelines', 'clinical', or 'source' in any field.
@@ -94,44 +109,31 @@ RULES:
 GUIDELINE EXCERPTS:
 {context}
 
-QUESTION: {question}
+QUESTION: {question}"""
 
-JSON ANSWER:"""
-
-    # Step 6: Generate answer using Gemini
-    result = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
-    )
-
-    # Step 7: Parse JSON — clean up any markdown fences if present
-    raw = result.text.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    raw = raw.strip()
-
+    # Step 6: Generate the answer. JSON mode makes Gemini return raw JSON
+    # (no ```json fences, no extra text), so parsing almost never fails.
     try:
-        parsed = json.loads(raw)
-        answer_str = json.dumps(parsed)
+        result = client.models.generate_content(
+            model=GENERATION_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json"),
+        )
+    except genai_errors.APIError as e:
+        raise ModelUnavailableError("Generation failed") from e
+
+    # Step 7: Parse, with a safe fallback just in case
+    raw = (result.text or "").strip()
+    try:
+        answer_str = json.dumps(json.loads(raw))
     except json.JSONDecodeError:
-        # Fallback if Gemini doesn't return valid JSON
         answer_str = json.dumps({
             "summary": "Here is what I found about your question.",
-            "points": [
-                {
-                    "heading": "From the guidelines",
-                    "body": raw
-                }
-            ],
+            "points": [{"heading": "From the guidelines", "body": raw}],
             "closing": "Please consult your healthcare provider for personalized guidance."
         })
 
-    return {
-        "answer": answer_str,
-        "sources": sources
-    }
+    return {"answer": answer_str, "sources": sources}
 
 
 # Test it
