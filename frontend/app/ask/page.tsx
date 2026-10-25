@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { AnswerData, normalizeQuestion, parseAnswer } from "@/lib/answer";
+import { AnswerData } from "@/lib/answer";
 import { askOrchid } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import PillScroll from "@/components/ui/PillScroll";
@@ -36,12 +36,16 @@ export default function AskPage() {
   const [suggested, setSuggested] = useState<string[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null); // questions left today
 
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     setSuggested(getRandomQuestions());
   }, []);
+
+  // Signing in or out changes the allowance, so forget the old count
+  useEffect(() => setRemaining(null), [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -61,24 +65,12 @@ export default function AskPage() {
 
   async function handleSubmit() {
     if (!question.trim() || question.length > 500) return;
-    // Asked this exact question before? Show the user's own saved answer
-    // from their history: instant, free, and only ever their own data.
-    const asked = normalizeQuestion(question);
-    const previous = history.find(
-      (h) => normalizeQuestion(h.question) === asked,
-    );
-    const previousAnswer = previous ? parseAnswer(previous.answer) : null;
-    if (previous && previousAnswer) {
-      setAnswer(previousAnswer);
-      setSources(previous.sources ?? []);
-      return;
-    }
-
     setLoading(true);
     setAnswer(null);
     setSources([]);
 
     const result = await askOrchid(question);
+    if (result.remaining != null) setRemaining(result.remaining);
     setAnswer(result.answer);
     setSources(result.sources);
     setLoading(false);
@@ -166,8 +158,10 @@ export default function AskPage() {
 
             <div className="flex items-center justify-between text-caption">
               <p className="text-muted">
-                {!user &&
-                  "Guest questions aren't saved. Sign in to keep a history."}
+                {remaining !== null
+                  ? `${remaining} ${remaining === 1 ? "question" : "questions"} left today`
+                  : !user &&
+                    "Guest questions aren't saved. Sign in to keep a history."}
               </p>
               <p
                 className={question.length > 450 ? "text-error" : "text-muted"}

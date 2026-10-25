@@ -1,4 +1,5 @@
 import { AnswerData, parseAnswer } from "@/lib/answer";
+import { supabase } from "@/lib/supabase";
 
 // Where the backend lives. Set NEXT_PUBLIC_API_URL in .env.local
 // (and in Vercel when deployed); falls back to the local backend.
@@ -8,6 +9,7 @@ export interface AskResult {
   ok: boolean; // false = a friendly notice, not a real answer (don't save it)
   answer: AnswerData;
   sources: string[];
+  remaining?: number | null; // questions left today, when the backend knows
 }
 
 // Builds an answer-shaped message, so errors show on the answer paper
@@ -24,11 +26,19 @@ function notice(summary: string, body: string): AskResult {
 }
 
 export async function askOrchid(question: string): Promise<AskResult> {
+  // Signed-in users send their login token, so the backend can give them
+  // the bigger daily allowance. Guests send nothing.
+  const { data: auth } = await supabase.auth.getSession();
+  const token = auth.session?.access_token;
+
   let res: Response;
   try {
     res = await fetch(`${API_URL}/ask`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
       body: JSON.stringify({ question }),
     });
   } catch {
@@ -59,5 +69,5 @@ export async function askOrchid(question: string): Promise<AskResult> {
     return notice("Something went wrong.", "Please try asking your question again.");
   }
 
-  return { ok: true, answer, sources: data.sources ?? [] };
+  return { ok: true, answer, sources: data.sources ?? [], remaining: data.remaining };
 }
