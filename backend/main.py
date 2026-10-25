@@ -12,7 +12,8 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from mock import MOCK_RESULT
-from retrieval import ModelUnavailableError, retrieve_and_answer
+from ask_service import answer_question
+from retrieval import ModelUnavailableError
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -65,6 +66,8 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 # Request / response shapes 
 class QuestionRequest(BaseModel):
     question: str
+
+
 class QuestionResponse(BaseModel):
     answer: str  # a JSON string: {summary, points, closing}
     sources: list[str]
@@ -96,7 +99,7 @@ def ask_question(request: Request, body: QuestionRequest):
         return QuestionResponse(**MOCK_RESULT)
 
     try:
-        result = retrieve_and_answer(question)
+        result = answer_question(question)
     except ModelUnavailableError:
         # Gemini is down, out of credits, or rate-limiting us
         logger.exception("Gemini unavailable")
