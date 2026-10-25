@@ -13,3 +13,14 @@ export function parseAnswer(raw: string): AnswerData | null {
     return null;
   }
 }
+
+// "  Why are my cycles SO irregular?? " -> "why are my cycles so irregular"
+// Same rule as normalize() in the backend's suggested.py
+export function normalizeQuestion(question: string): string {
+    return question
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_]/gu, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(" ");
+}

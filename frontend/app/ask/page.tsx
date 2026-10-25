@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { AnswerData } from "@/lib/answer";
+import { AnswerData, normalizeQuestion, parseAnswer } from "@/lib/answer";
 import { askOrchid } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import PillScroll from "@/components/ui/PillScroll";
@@ -61,6 +61,19 @@ export default function AskPage() {
 
   async function handleSubmit() {
     if (!question.trim() || question.length > 500) return;
+    // Asked this exact question before? Show the user's own saved answer
+    // from their history: instant, free, and only ever their own data.
+    const asked = normalizeQuestion(question);
+    const previous = history.find(
+      (h) => normalizeQuestion(h.question) === asked,
+    );
+    const previousAnswer = previous ? parseAnswer(previous.answer) : null;
+    if (previous && previousAnswer) {
+      setAnswer(previousAnswer);
+      setSources(previous.sources ?? []);
+      return;
+    }
+
     setLoading(true);
     setAnswer(null);
     setSources([]);
