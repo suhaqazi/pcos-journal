@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
-import { AnswerData, parseAnswer } from "@/lib/answer";
+import { AnswerData } from "@/lib/answer";
+import { askOrchid } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import PillScroll from "@/components/ui/PillScroll";
 import HistoryCabinet, { HistoryItem } from "@/components/ask/HistoryCabinet";
@@ -26,17 +27,6 @@ const SUGGESTED_QUESTIONS = [
 function getRandomQuestions() {
   return [...SUGGESTED_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 4);
 }
-
-const CONNECTION_ERROR: AnswerData = {
-  summary: "Something went wrong.",
-  points: [
-    {
-      heading: "Connection issue",
-      body: "Please check your connection and try again. If the problem persists, the service may be temporarily unavailable.",
-    },
-  ],
-  closing: "Please try again in a moment.",
-};
 
 export default function AskPage() {
   const [question, setQuestion] = useState("");
@@ -74,35 +64,26 @@ export default function AskPage() {
     setLoading(true);
     setAnswer(null);
     setSources([]);
-    try {
-      const res = await fetch("http://localhost:8000/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
-      const data = await res.json();
-      const parsed = parseAnswer(data.answer);
-      setAnswer(parsed);
-      setSources(data.sources || []);
 
-      if (user) {
-        const { data: saved } = await supabase
-          .from("questions")
-          .insert({
-            user_id: user.id,
-            question,
-            answer: JSON.stringify(parsed),
-            sources: data.sources || [],
-          })
-          .select()
-          .single();
+    const result = await askOrchid(question);
+    setAnswer(result.answer);
+    setSources(result.sources);
+    setLoading(false);
 
-        if (saved) setHistory((prev) => [saved, ...prev]);
-      }
-    } catch {
-      setAnswer(CONNECTION_ERROR);
-    } finally {
-      setLoading(false);
+    // Only real answers go into a signed-in user's history, not error notices
+    if (user && result.ok) {
+      const { data: saved } = await supabase
+        .from("questions")
+        .insert({
+          user_id: user.id,
+          question,
+          answer: JSON.stringify(result.answer),
+          sources: result.sources,
+        })
+        .select()
+        .single();
+
+      if (saved) setHistory((prev) => [saved, ...prev]);
     }
   }
 
