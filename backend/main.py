@@ -11,9 +11,9 @@ from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
+import allowance
 from mock import MOCK_RESULT
-from ask_service import answer_question
-from retrieval import ModelUnavailableError
+from retrieval import ModelUnavailableError, retrieve_and_answer
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
@@ -24,8 +24,9 @@ logger = logging.getLogger("pcos-api")
 # true = return the saved sample answer instead of calling Gemini
 MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"
 
-# How often one person (IP address) can ask. Format: "N/period;N/period"
-ASK_RATE_LIMIT = os.getenv("ASK_RATE_LIMIT", "5/minute;20/day")
+# Short-term anti-spam limit per IP address. Daily allowances
+# (guests vs signed-in users) are handled separately in allowance.py.
+ASK_RATE_LIMIT = os.getenv("ASK_RATE_LIMIT", "5/minute")
 
 # Which websites may call this API (comma-separated)
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
@@ -56,11 +57,10 @@ app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    if "day" in str(exc.detail):
-        message = "You've asked a lot today. Orchid will be ready for more questions tomorrow."
-    else:
-        message = "You're asking too quickly! Please wait a moment and try again."
-    return JSONResponse(status_code=429, content={"detail": message})
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "You're asking quickly. Please wait a moment and try again."},
+    )
 
 
 # Request / response shapes 
@@ -71,6 +71,7 @@ class QuestionRequest(BaseModel):
 class QuestionResponse(BaseModel):
     answer: str  # a JSON string: {summary, points, closing}
     sources: list[str]
+    remaining: int | None = None  # questions left today (None if unknown)
 
 # Endpoints 
 
@@ -94,15 +95,23 @@ def ask_question(request: Request, body: QuestionRequest):
             detail="Question too long. Please keep it under 500 characters",
         )
 
+    # Daily allowance: who's asking, and do they have questions left?
+    asker = allowance.identify(request)
+    allowed, remaining = allowance.use(asker)
+    if not allowed:
+        raise HTTPException(status_code=429, detail=allowance.limit_message(asker))
+
     if MOCK_LLM:
         time.sleep(0.8)  # pretend to think, so loading states are visible
-        return QuestionResponse(**MOCK_RESULT)
+        return QuestionResponse(**MOCK_RESULT, remaining=remaining)
 
     try:
-        result = answer_question(question)
+        result = retrieve_and_answer(question)
     except ModelUnavailableError:
-        # Gemini is down, out of credits, or rate-limiting us
+        # Gemini is down, out of credits, or rate-limiting us.
+        # Not the user's fault, so give their question back.
         logger.exception("Gemini unavailable")
+        allowance.refund(asker)
         raise HTTPException(
             status_code=503,
             detail="Orchid is resting right now. Please try again a little later.",
@@ -110,9 +119,12 @@ def ask_question(request: Request, body: QuestionRequest):
     except Exception:
         # Anything unexpected: log the details, show the user something calm
         logger.exception("Unexpected error in /ask")
+        allowance.refund(asker)
         raise HTTPException(
             status_code=500,
             detail="Something went wrong on our side. Please try again.",
         )
 
-    return QuestionResponse(answer=result["answer"], sources=result["sources"])
+    return QuestionResponse(
+        answer=result["answer"], sources=result["sources"], remaining=remaining
+    )
