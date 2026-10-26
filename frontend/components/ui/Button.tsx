@@ -29,6 +29,10 @@ const variants = {
   chip:
     "px-3 py-1 text-small font-normal text-left justify-start " +
     "text-burgundy border border-burgundy/25 hover:bg-burgundy/5",
+  // A chip that's switched on — selected moods and symptoms
+  chipActive:
+    "px-3 py-1 text-small font-normal text-left justify-start " +
+    "text-paper bg-burgundy border border-burgundy",
   // Plain text action — "Ask another →", "Browse resources →"
   link: "text-burgundy hover:underline underline-offset-4",
 };

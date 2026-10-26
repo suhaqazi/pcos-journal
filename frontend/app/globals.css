@@ -29,6 +29,13 @@
   --color-linen-dark: #EDE8DE;
   --color-sand: #E0D8C8;
 
+  /* Journal moods */
+  --color-mood-great: #6F8A4E;
+  --color-mood-good: #A9B98A;
+  --color-mood-okay: #E3C987;
+  --color-mood-low: #C9928A;
+  --color-mood-rough: #8E3B4E;
+
   /* States */
   --color-disabled: #9A9A90;
   --color-error: #E24B4A;
@@ -82,6 +89,16 @@
   /* When the phrase wraps, each line gets its own underline */
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
+}
+
+/* Ruled notebook lines, one every 2rem — pair with leading-8 */
+@utility lined-paper {
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent calc(2rem - 1px),
+    rgb(107 31 50 / 0.15) calc(2rem - 1px),
+    rgb(107 31 50 / 0.15) 2rem
+  );
 }
 
 /* Hides the native scrollbar where PillScroll draws its own pill */
