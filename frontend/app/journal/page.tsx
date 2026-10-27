@@ -222,8 +222,10 @@ export default function JournalPage() {
           {user && (
             <MoodPicker
               mood={draft.mood}
+              flow={draft.flow}
               symptoms={draft.symptoms}
               onMood={(mood) => updateDraft({ mood })}
+              onFlow={(flow) => updateDraft({ flow })}
               onToggleSymptom={toggleSymptom}
             />
           )}
