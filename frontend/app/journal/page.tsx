@@ -23,6 +23,9 @@ import {
   todayKey,
 } from "@/lib/journal";
 
+const DESCRIPTION =
+  "Write what your body did and how you felt. Over time, these pages turn into patterns you can bring to your clinician. Only you can read them.";
+
 export default function JournalPage() {
   const { user, loading: authLoading } = useAuth();
   const today = todayKey();
@@ -164,12 +167,16 @@ export default function JournalPage() {
   return (
     <main className="min-h-screen bg-[url('/wallpaper.svg')] bg-cover bg-fixed bg-center bg-no-repeat px-8 pt-8 pb-24">
       {/* Header — the tape label from Figma, with text laid on top.
-          Sized and placed as % of the board width, so it lines up with the
-          clipboard exactly as in the design (label x 122, w 733.74; board
-          x 56). The negative margin matches the 50px the label's box
-          overlaps the board's box in Figma, above the folder itself. */}
+          The label is a container (@container), and its text is sized in
+          cqw (% of the label's width), so the words shrink and grow WITH
+          the label instead of spilling out of it.
+          From md up: placed as % of the board, like the Figma design
+          (label x 122, w 733.74; board x 56). The negative margin matches
+          the 50px the label's box overlaps the board's box, above the folder.
+          On phones the label is full width, and the description moves
+          underneath it, where it can stay readable. */}
       <div className="mx-auto w-full max-w-6xl">
-        <div className="relative -mb-[3.71%] ml-[4.9%] w-[54.44%]">
+        <div className="@container relative w-full md:-mb-[3.71%] md:ml-[4.9%] md:w-[54.44%]">
           <Image
             src="/askpagehead.svg"
             alt=""
@@ -179,19 +186,21 @@ export default function JournalPage() {
             className="block h-auto w-full"
           />
           <div className="absolute inset-x-[12%] top-[22%] bottom-[12%] flex flex-col items-center justify-center text-center">
-            <h1 className="text-display leading-tight font-black text-burgundy">
+            <h1 className="text-[7cqw] leading-tight font-black text-burgundy md:text-[4.5cqw]">
               Your journal
             </h1>
-            <p className="mb-2 text-body font-bold text-ink">
+            <p className="text-[3.8cqw] font-bold text-ink md:mb-[1.2cqw] md:text-[2.4cqw]">
               One page for today
             </p>
-            <p className="text-caption leading-snug text-ink">
-              Write what your body did and how you felt. Over time, these pages
-              turn into patterns you can bring to your clinician. Only you can
-              read them.
+            <p className="hidden text-[1.9cqw] leading-snug text-ink md:block">
+              {DESCRIPTION}
             </p>
           </div>
         </div>
+
+        <p className="mt-3 mb-6 rounded-xl bg-paper/90 px-4 py-3 text-center text-small text-ink md:hidden">
+          {DESCRIPTION}
+        </p>
       </div>
 
       {/* Clipboard — one SVG, content laid on top. Positions are % of the
@@ -208,7 +217,7 @@ export default function JournalPage() {
 
         {/* Left card — calendar, then mood and symptoms */}
         <PillScroll
-          className="absolute top-[20.21%] left-[9.14%] h-[70.11%] w-[28.16%]"
+          className="absolute top-[20.21%] left-[9.14%] h-[70.11%] w-[28.16%] -rotate-[1.3deg]"
           contentClassName="flex flex-col gap-5 pr-4"
         >
           <MonthCalendar
