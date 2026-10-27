@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
+import PageLabel from "@/components/ui/PageLabel";
 import PillScroll from "@/components/ui/PillScroll";
 import MonthCalendar from "@/components/journal/MonthCalendar";
 import MoodPicker from "@/components/journal/MoodPicker";
@@ -22,9 +23,6 @@ import {
   saveEntry,
   todayKey,
 } from "@/lib/journal";
-
-const DESCRIPTION =
-  "Write what your body did and how you felt. Over time, these pages turn into patterns you can bring to your clinician. Only you can read them.";
 
 export default function JournalPage() {
   const { user, loading: authLoading } = useAuth();
@@ -166,41 +164,16 @@ export default function JournalPage() {
 
   return (
     <main className="min-h-screen bg-[url('/wallpaper.svg')] bg-cover bg-fixed bg-center bg-no-repeat px-8 pt-8 pb-24">
-      {/* Header — the tape label from Figma, with text laid on top.
-          The label is a container (@container), and its text is sized in
-          cqw (% of the label's width), so the words shrink and grow WITH
-          the label instead of spilling out of it.
-          From md up: placed as % of the board, like the Figma design
-          (label x 122, w 733.74; board x 56). The negative margin matches
-          the 50px the label's box overlaps the board's box, above the folder.
-          On phones the label is full width, and the description moves
-          underneath it, where it can stay readable. */}
+      {/* Header — positioned against the clipboard as in Figma (label x 122,
+          w 733.74; board x 56). The negative margin matches the 50px the
+          label's box overlaps the board's box, above the folder. */}
       <div className="mx-auto w-full max-w-6xl">
-        <div className="@container relative w-full md:-mb-[3.71%] md:ml-[4.9%] md:w-[54.44%]">
-          <Image
-            src="/askpagehead.svg"
-            alt=""
-            width={734}
-            height={228}
-            priority
-            className="block h-auto w-full"
-          />
-          <div className="absolute inset-x-[12%] top-[22%] bottom-[12%] flex flex-col items-center justify-center text-center">
-            <h1 className="text-[7cqw] leading-tight font-black text-burgundy md:text-[4.5cqw]">
-              Your journal
-            </h1>
-            <p className="text-[3.8cqw] font-bold text-ink md:mb-[1.2cqw] md:text-[2.4cqw]">
-              One page for today
-            </p>
-            <p className="hidden text-[1.9cqw] leading-snug text-ink md:block">
-              {DESCRIPTION}
-            </p>
-          </div>
-        </div>
-
-        <p className="mt-3 mb-6 rounded-xl bg-paper/90 px-4 py-3 text-center text-small text-ink md:hidden">
-          {DESCRIPTION}
-        </p>
+        <PageLabel
+          title="Your journal"
+          subtitle="One page for today"
+          description="Write what your body did and how you felt. Over time, these pages turn into patterns you can bring to your clinician. Only you can read them."
+          className="md:-mb-[3.71%] md:ml-[4.9%] md:w-[54.44%]"
+        />
       </div>
 
       {/* Clipboard — one SVG, content laid on top. Positions are % of the
