@@ -10,6 +10,17 @@ export const MOODS = [
 
 export type MoodId = (typeof MOODS)[number]["id"];
 
+// Period flow for the day. No selection means no period.
+// Logged as its own field (not a tag) so Insights can work out cycle lengths.
+export const FLOWS = [
+  { id: "spotting", label: "Spotting" },
+  { id: "light", label: "Light" },
+  { id: "medium", label: "Medium" },
+  { id: "heavy", label: "Heavy" },
+] as const;
+
+export type FlowId = (typeof FLOWS)[number]["id"];
+
 export const SYMPTOMS = [
   "Cramps",
   "Bloating",
@@ -20,7 +31,6 @@ export const SYMPTOMS = [
   "Hair changes",
   "Brain fog",
   "Trouble sleeping",
-  "Period",
 ];
 
 export interface JournalEntry {
@@ -28,6 +38,7 @@ export interface JournalEntry {
   entry_date: string; // "2026-10-25"
   content: string;
   mood: MoodId | null;
+  flow: FlowId | null;
   symptoms: string[];
 }
 
@@ -35,19 +46,20 @@ export interface JournalEntry {
 export interface Draft {
   content: string;
   mood: MoodId | null;
+  flow: FlowId | null;
   symptoms: string[];
 }
 
-export const EMPTY_DRAFT: Draft = { content: "", mood: null, symptoms: [] };
+export const EMPTY_DRAFT: Draft = { content: "", mood: null, flow: null, symptoms: [] };
 
 export function draftFrom(entry?: JournalEntry): Draft {
   return entry
-    ? { content: entry.content, mood: entry.mood, symptoms: entry.symptoms }
+    ? { content: entry.content, mood: entry.mood, flow: entry.flow, symptoms: entry.symptoms }
     : EMPTY_DRAFT;
 }
 
 export function isEmptyDraft(d: Draft) {
-  return !d.content.trim() && !d.mood && d.symptoms.length === 0;
+  return !d.content.trim() && !d.mood && !d.flow && d.symptoms.length === 0;
 }
 
 export function moodById(id: MoodId | null) {
@@ -104,7 +116,7 @@ export async function fetchMonthEntries(month: string): Promise<JournalEntry[]> 
 
   const { data, error } = await supabase
     .from("journal_entries")
-    .select("id, entry_date, content, mood, symptoms")
+    .select("id, entry_date, content, mood, flow, symptoms")
     .gte("entry_date", first)
     .lte("entry_date", last);
 
@@ -121,12 +133,13 @@ export async function saveEntry(userId: string, key: string, draft: Draft): Prom
         entry_date: key,
         content: draft.content,
         mood: draft.mood,
+        flow: draft.flow,
         symptoms: draft.symptoms,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id,entry_date" }
     )
-    .select("id, entry_date, content, mood, symptoms")
+    .select("id, entry_date, content, mood, flow, symptoms")
     .single();
 
   if (error) throw error;
