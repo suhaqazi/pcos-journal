@@ -1,7 +1,13 @@
+"use client";
+
+import { useState } from "react";
+import Button from "@/components/ui/Button";
+import PillScroll from "@/components/ui/PillScroll";
+import { AVERAGE_OVER, Period } from "@/lib/insights";
 import { fromDateKey } from "@/lib/journal";
 
 interface CycleLengthsProps {
-  periods: { start: string; periodDays: number; cycleLength: number | null }[];
+  periods: Period[]; // full history, oldest first
   averageCycle: number | null;
   averagePeriod: number | null;
   currentDay: number | null;
@@ -11,11 +17,19 @@ interface CycleLengthsProps {
 const TYPICAL_MIN = 21;
 const TYPICAL_MAX = 35;
 
+// Rows shown before "Show all"
+const PREVIEW = 5;
+
 const shortDate = (key: string) =>
   fromDateKey(key).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
+    year: "numeric",
   });
+
+const isOutsideTypical = (p: Period) =>
+  p.cycleLength !== null &&
+  (p.cycleLength < TYPICAL_MIN || p.cycleLength > TYPICAL_MAX);
 
 // One row per period. Each track is a timeline in days: finished cycles
 // show their full length, the current cycle shows how far along it is.
@@ -25,6 +39,10 @@ export default function CycleLengths({
   averagePeriod,
   currentDay,
 }: CycleLengthsProps) {
+  const [newestFirst, setNewestFirst] = useState(true);
+  const [onlyOutside, setOnlyOutside] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+
   if (periods.length === 0) {
     return (
       <p className="text-body text-muted">
@@ -34,6 +52,11 @@ export default function CycleLengths({
     );
   }
 
+  // Filter, then sort, then cut to the preview unless "Show all" is on
+  const filtered = onlyOutside ? periods.filter(isOutsideTypical) : periods;
+  const sorted = newestFirst ? [...filtered].reverse() : filtered;
+  const visible = showAll ? sorted : sorted.slice(0, PREVIEW);
+
   // The scale grows if any cycle runs longer than 45 days, so nothing overflows
   const scale = Math.max(
     45,
@@ -42,92 +65,150 @@ export default function CycleLengths({
   );
   const pct = (days: number) => `${(days / scale) * 100}%`;
 
+  const rows = (
+    <ul className="flex flex-col gap-3">
+      {visible.map((p) => {
+        const isCurrent = p.cycleLength === null;
+        const days = isCurrent ? (currentDay ?? 0) : p.cycleLength!;
+
+        return (
+          <li
+            key={p.start}
+            className="grid grid-cols-[6.5rem_1fr_11rem] items-center gap-3 text-small"
+          >
+            <span className="text-muted">{shortDate(p.start)}</span>
+
+            <div className="relative h-3 overflow-hidden rounded-full bg-burgundy/10">
+              {/* Typical range, 21 to 35 days */}
+              <div
+                className="absolute inset-y-0 bg-olive/20"
+                style={{
+                  left: pct(TYPICAL_MIN),
+                  width: pct(TYPICAL_MAX - TYPICAL_MIN),
+                }}
+              />
+              {/* The cycle itself: solid when finished, dashed while in progress */}
+              <div
+                className={`relative h-full rounded-full ${
+                  isCurrent
+                    ? "border-2 border-dashed border-olive bg-olive/30"
+                    : "bg-olive"
+                }`}
+                style={{ width: pct(days) }}
+              />
+            </div>
+
+            <span className="text-right text-ink">
+              {isCurrent ? `Day ${days} so far` : `${days}-day cycle`}
+              <span className="text-muted"> · {p.periodDays}-day period</span>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+
   return (
     <div>
       {/* Headline numbers */}
       {(averageCycle !== null || averagePeriod !== null) && (
-        <div className="mb-6 flex flex-wrap items-baseline gap-x-10 gap-y-3">
-          {averageCycle !== null && (
-            <p className="text-body text-ink">
-              <span className="font-display text-headline font-black text-burgundy italic">
-                {averageCycle}
-              </span>{" "}
-              day cycle on average
-            </p>
-          )}
-          {averagePeriod !== null && (
-            <p className="text-body text-ink">
-              <span className="font-display text-headline font-black text-burgundy italic">
-                {averagePeriod}
-              </span>{" "}
-              day period on average
-            </p>
-          )}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-baseline gap-x-10 gap-y-3">
+            {averageCycle !== null && (
+              <p className="text-body text-ink">
+                <span className="font-display text-headline font-black text-burgundy italic">
+                  {averageCycle}
+                </span>{" "}
+                day cycle on average
+              </p>
+            )}
+            {averagePeriod !== null && (
+              <p className="text-body text-ink">
+                <span className="font-display text-headline font-black text-burgundy italic">
+                  {averagePeriod}
+                </span>{" "}
+                day period on average
+              </p>
+            )}
+          </div>
+          <p className="mt-1 text-caption text-muted">
+            Averages use your last {AVERAGE_OVER} cycles.
+          </p>
         </div>
       )}
 
-      {/* Scale labels, lined up with the tracks below */}
-      <div className="grid grid-cols-[4.5rem_1fr_11rem] gap-3">
-        <span />
-        <div className="relative h-5 font-hand text-caption text-muted">
-          <span
-            className="absolute -translate-x-1/2"
-            style={{ left: pct(TYPICAL_MIN) }}
-          >
-            {TYPICAL_MIN}
-          </span>
-          <span
-            className="absolute -translate-x-1/2"
-            style={{ left: pct(TYPICAL_MAX) }}
-          >
-            {TYPICAL_MAX}
-          </span>
-          <span className="absolute right-0">{scale} days</span>
-        </div>
-        <span />
+      {/* Sort and filter */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Button
+          variant={newestFirst ? "chipActive" : "chip"}
+          aria-pressed={newestFirst}
+          onClick={() => setNewestFirst(true)}
+        >
+          Newest first
+        </Button>
+        <Button
+          variant={!newestFirst ? "chipActive" : "chip"}
+          aria-pressed={!newestFirst}
+          onClick={() => setNewestFirst(false)}
+        >
+          Oldest first
+        </Button>
+        <Button
+          variant={onlyOutside ? "chipActive" : "chip"}
+          aria-pressed={onlyOutside}
+          onClick={() => setOnlyOutside(!onlyOutside)}
+        >
+          Outside {TYPICAL_MIN}–{TYPICAL_MAX} days
+        </Button>
       </div>
 
-      {/* One row per period, oldest first */}
-      <ul className="flex flex-col gap-3">
-        {periods.map((p) => {
-          const isCurrent = p.cycleLength === null;
-          const days = isCurrent ? (currentDay ?? 0) : p.cycleLength!;
-
-          return (
-            <li
-              key={p.start}
-              className="grid grid-cols-[4.5rem_1fr_11rem] items-center gap-3 text-small"
-            >
-              <span className="text-muted">{shortDate(p.start)}</span>
-
-              <div className="relative h-3 overflow-hidden rounded-full bg-burgundy/10">
-                {/* Typical range, 21 to 35 days */}
-                <div
-                  className="absolute inset-y-0 bg-olive/20"
-                  style={{
-                    left: pct(TYPICAL_MIN),
-                    width: pct(TYPICAL_MAX - TYPICAL_MIN),
-                  }}
-                />
-                {/* The cycle itself: solid when finished, dashed while in progress */}
-                <div
-                  className={`relative h-full rounded-full ${
-                    isCurrent
-                      ? "border-2 border-dashed border-olive bg-olive/30"
-                      : "bg-olive"
-                  }`}
-                  style={{ width: pct(days) }}
-                />
-              </div>
-
-              <span className="text-right text-ink">
-                {isCurrent ? `Day ${days} so far` : `${days}-day cycle`}
-                <span className="text-muted"> · {p.periodDays}-day period</span>
+      {filtered.length === 0 ? (
+        <p className="text-body text-muted">
+          None of your cycles fall outside {TYPICAL_MIN} to {TYPICAL_MAX} days.
+        </p>
+      ) : (
+        <>
+          {/* Scale labels, lined up with the tracks below */}
+          <div className="grid grid-cols-[6.5rem_1fr_11rem] gap-3">
+            <span />
+            <div className="relative h-5 font-hand text-caption text-muted">
+              <span
+                className="absolute -translate-x-1/2"
+                style={{ left: pct(TYPICAL_MIN) }}
+              >
+                {TYPICAL_MIN}
               </span>
-            </li>
-          );
-        })}
-      </ul>
+              <span
+                className="absolute -translate-x-1/2"
+                style={{ left: pct(TYPICAL_MAX) }}
+              >
+                {TYPICAL_MAX}
+              </span>
+              <span className="absolute right-0">{scale} days</span>
+            </div>
+            <span />
+          </div>
+
+          {/* The full list scrolls inside the card instead of stretching the page */}
+          {showAll ? (
+            <PillScroll scrollClassName="max-h-80" contentClassName="pr-5">
+              {rows}
+            </PillScroll>
+          ) : (
+            rows
+          )}
+
+          {sorted.length > PREVIEW && (
+            <Button
+              variant="link"
+              onClick={() => setShowAll(!showAll)}
+              className="mt-4"
+            >
+              {showAll ? "Show less" : `Show all ${sorted.length} cycles`}
+            </Button>
+          )}
+        </>
+      )}
 
       <p className="mt-5 text-caption text-muted">
         Each bar is one cycle, from the first day of a period to the first day

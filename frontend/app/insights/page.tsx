@@ -14,8 +14,10 @@ import { addMonths, fromDateKey, monthKey, todayKey } from "@/lib/journal";
 import {
   HISTORY_MONTHS,
   InsightEntry,
+  PeriodDay,
   cycleSummary,
   fetchInsightEntries,
+  fetchPeriodDays,
   inMonth,
   moodCounts,
   moodSummary,
@@ -31,13 +33,18 @@ export default function InsightsPage() {
   const firstMonth = addMonths(thisMonth, -(HISTORY_MONTHS - 1));
 
   const [entries, setEntries] = useState<InsightEntry[] | null>(null);
+  const [periodDays, setPeriodDays] = useState<PeriodDay[]>([]);
   const [failed, setFailed] = useState(false);
   const [month, setMonth] = useState(thisMonth);
 
   useEffect(() => {
     if (!user) return;
-    fetchInsightEntries()
-      .then(setEntries)
+    // Last 12 months of tags, plus the full period history, at the same time
+    Promise.all([fetchInsightEntries(), fetchPeriodDays()])
+      .then(([recent, periods]) => {
+        setEntries(recent);
+        setPeriodDays(periods);
+      })
       .catch((err) => {
         console.error("Couldn't load insights", err);
         setFailed(true);
@@ -57,9 +64,9 @@ export default function InsightsPage() {
       weeks,
       moodCounts: moodCounts(entries, trendFrom),
       moodSummary: moodSummary(entries, trendFrom),
-      cycles: cycleSummary(entries, today),
+      cycles: cycleSummary(periodDays, today),
     };
-  }, [entries, month, today]);
+  }, [entries, periodDays, month, today]);
 
   const monthName = fromDateKey(`${month}-01`).toLocaleDateString("en-US", {
     month: "long",

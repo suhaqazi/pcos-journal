@@ -26,6 +26,21 @@ export async function fetchInsightEntries(): Promise<InsightEntry[]> {
   return data ?? [];
 }
 
+// Every day with a period logged, from all time. Small: only a few rows
+// per month, so the full cycle history stays cheap to load.
+export type PeriodDay = Pick<InsightEntry, "entry_date" | "flow">;
+
+export async function fetchPeriodDays(): Promise<PeriodDay[]> {
+  const { data, error } = await supabase
+    .from("journal_entries")
+    .select("entry_date, flow")
+    .not("flow", "is", null)
+    .order("entry_date");
+
+  if (error) throw error;
+  return data ?? [];
+}
+
 export function inMonth(entries: InsightEntry[], month: string) {
   return entries.filter((e) => e.entry_date.startsWith(month));
 }
@@ -155,7 +170,7 @@ const BLEEDING: FlowId[] = ["light", "medium", "heavy"];
 // new one). Each period knows when it started, how long it lasted, and,
 // if another period came after it, how long that whole cycle was.
 // Works from whatever was logged: no daily logging or streak needed.
-export function periodHistory(entries: InsightEntry[]) {
+export function periodHistory(entries: PeriodDay[]) {
   const bleedingDays = entries
     .filter((e) => e.flow && BLEEDING.includes(e.flow))
     .map((e) => e.entry_date)
@@ -175,17 +190,28 @@ export function periodHistory(entries: InsightEntry[]) {
   }));
 }
 
-export function cycleSummary(entries: InsightEntry[], today: string) {
-  const periods = periodHistory(entries).slice(-6);
-  const cycles = periods.filter((p) => p.cycleLength !== null).map((p) => p.cycleLength!);
+export interface Period {
+  start: string;
+  periodDays: number;
+  cycleLength: number | null; // null = the current, unfinished cycle
+}
+
+// Averages use the most recent cycles: they say more about now than
+// cycles from years ago
+export const AVERAGE_OVER = 6;
+
+export function cycleSummary(periodDays: PeriodDay[], today: string) {
+  const periods: Period[] = periodHistory(periodDays);
+  const recent = periods.slice(-AVERAGE_OVER);
+  const cycles = recent.filter((p) => p.cycleLength !== null).map((p) => p.cycleLength!);
   const average = (list: number[]) =>
     list.length ? Math.round(list.reduce((a, b) => a + b, 0) / list.length) : null;
   const last = periods[periods.length - 1];
 
   return {
-    periods,
+    periods, // the full history, oldest first
     averageCycle: average(cycles),
-    averagePeriod: average(periods.map((p) => p.periodDays)),
+    averagePeriod: average(recent.map((p) => p.periodDays)),
     currentDay: last ? daysBetween(last.start, today) + 1 : null,
   };
 }
