@@ -30,6 +30,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   useRedirectIfSignedIn();
 
@@ -141,6 +142,28 @@ export default function SignupPage() {
           }
         />
 
+        {/* Age and terms: required before an account can be created */}
+        <label className="flex items-start gap-3 text-sm text-ink sm:col-span-2">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            required
+            className="mt-0.5 size-4 shrink-0 cursor-pointer accent-burgundy"
+          />
+          <span>
+            I&apos;m 16 or older, and I agree to the{" "}
+            <TextLink href="/terms" target="_blank">
+              Terms
+            </TextLink>{" "}
+            and{" "}
+            <TextLink href="/privacy" target="_blank">
+              Privacy Policy
+            </TextLink>
+            .
+          </span>
+        </label>
+
         {error && (
           <p
             role="alert"
@@ -152,7 +175,9 @@ export default function SignupPage() {
 
         <Button
           type="submit"
-          disabled={loading || !allRequirementsMet || !passwordsMatch}
+          disabled={
+            loading || !allRequirementsMet || !passwordsMatch || !agreed
+          }
           className="mt-2 w-full sm:col-span-2"
         >
           {loading ? "Creating account..." : "Create account →"}
