@@ -71,3 +71,28 @@ export async function askOrchid(question: string): Promise<AskResult> {
 
   return { ok: true, answer, sources: data.sources ?? [], remaining: data.remaining };
 }
+
+// Sends a "Talk to the founder" message. Returns null on success,
+// or a friendly error message to show under the form.
+export async function sendContactMessage(fields: {
+  name: string;
+  email: string;
+  message: string;
+  website: string; // honeypot, normally empty
+}): Promise<string | null> {
+  try {
+    const res = await fetch(`${API_URL}/contact`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    });
+    if (res.ok) return null;
+
+    const data = await res.json().catch(() => null);
+    if (typeof data?.detail === "string") return data.detail;
+    if (res.status === 422) return "Please check your message isn't too long and try again.";
+    return "Your message couldn't be sent. Please try again.";
+  } catch {
+    return "We couldn't reach the server. Please check your connection and try again.";
+  }
+}
