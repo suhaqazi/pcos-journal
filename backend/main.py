@@ -1,12 +1,14 @@
 import logging
 import os
+import re
 import time
 
+import resend
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -27,6 +29,14 @@ MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"
 # Short-term anti-spam limit per IP address. Daily allowances
 # (guests vs signed-in users) are handled separately in allowance.py.
 ASK_RATE_LIMIT = os.getenv("ASK_RATE_LIMIT", "5/minute")
+
+# How many contact messages one person (IP address) can send
+CONTACT_RATE_LIMIT = os.getenv("CONTACT_RATE_LIMIT", "3/hour")
+
+# Contact form messages are emailed through Resend
+resend.api_key = os.getenv("RESEND_API_KEY")
+CONTACT_TO_EMAIL = os.getenv("CONTACT_TO_EMAIL", "askmyorchid@gmail.com")
+CONTACT_FROM_EMAIL = os.getenv("CONTACT_FROM_EMAIL", "Ask Orchid <onboarding@resend.dev>")
 
 # Which websites may call this API (comma-separated)
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
@@ -57,10 +67,11 @@ app.state.limiter = limiter
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    return JSONResponse(
-        status_code=429,
-        content={"detail": "You're asking quickly. Please wait a moment and try again."},
-    )
+    if request.url.path == "/contact":
+        message = "You've sent a few messages already. Please try again a little later."
+    else:
+        message = "You're asking quickly. Please wait a moment and try again."
+    return JSONResponse(status_code=429, content={"detail": message})
 
 
 # Request / response shapes 
@@ -72,6 +83,17 @@ class QuestionResponse(BaseModel):
     answer: str  # a JSON string: {summary, points, closing}
     sources: list[str]
     remaining: int | None = None  # questions left today (None if unknown)
+
+
+class ContactRequest(BaseModel):
+    name: str = Field(default="", max_length=100)
+    email: str = Field(max_length=200)
+    message: str = Field(max_length=2000)
+    website: str = ""  # honeypot: hidden in the form, so only bots fill it in
+
+
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
 
 # Endpoints 
 
@@ -128,3 +150,38 @@ def ask_question(request: Request, body: QuestionRequest):
     return QuestionResponse(
         answer=result["answer"], sources=result["sources"], remaining=remaining
     )
+
+
+@app.post("/contact")
+@limiter.limit(CONTACT_RATE_LIMIT)
+def contact(request: Request, body: ContactRequest):
+    # A bot filled in the hidden field: pretend it worked, store nothing
+    if body.website:
+        return {"ok": True}
+
+    email = body.email.strip()
+    message = body.message.strip()
+
+    if not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    if not message:
+        raise HTTPException(status_code=400, detail="Please write a message.")
+
+    name = body.name.strip()
+
+    try:
+        resend.Emails.send({
+            "from": CONTACT_FROM_EMAIL,
+            "to": [CONTACT_TO_EMAIL],
+            "reply_to": email,  # hitting Reply in your inbox answers them directly
+            "subject": f"Ask Orchid message from {name or email}",
+            "text": f"From: {name or '(no name given)'}\nEmail: {email}\n\n{message}",
+        })
+    except Exception:
+        logger.exception("Sending contact email failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Your message couldn't be sent. Please try again, or email askmyorchid@gmail.com.",
+        )
+
+    return {"ok": True}
