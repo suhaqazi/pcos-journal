@@ -72,13 +72,15 @@ export default function CycleLengths({
         const days = isCurrent ? (currentDay ?? 0) : p.cycleLength!;
 
         return (
+          // Phones: date and label on one line, the bar full width below.
+          // From sm up: date | bar | label, in one row.
           <li
             key={p.start}
-            className="grid grid-cols-[6.5rem_1fr_11rem] items-center gap-3 text-small"
+            className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-1.5 text-small sm:grid-cols-[6.5rem_1fr_11rem]"
           >
             <span className="text-muted">{shortDate(p.start)}</span>
 
-            <div className="relative h-3 overflow-hidden rounded-full bg-burgundy/10">
+            <div className="relative order-3 col-span-2 h-3 overflow-hidden rounded-full bg-burgundy/10 sm:order-none sm:col-span-1">
               {/* Typical range, 21 to 35 days */}
               <div
                 className="absolute inset-y-0 bg-olive/20"
@@ -98,7 +100,7 @@ export default function CycleLengths({
               />
             </div>
 
-            <span className="text-right text-ink">
+            <span className="text-right text-ink sm:order-none">
               {isCurrent ? `Day ${days} so far` : `${days}-day cycle`}
               <span className="text-muted"> · {p.periodDays}-day period</span>
             </span>
@@ -169,8 +171,8 @@ export default function CycleLengths({
       ) : (
         <>
           {/* Scale labels, lined up with the tracks below */}
-          <div className="grid grid-cols-[6.5rem_1fr_11rem] gap-3">
-            <span />
+          <div className="grid gap-3 sm:grid-cols-[6.5rem_1fr_11rem]">
+            <span className="hidden sm:block" />
             <div className="relative h-5 font-hand text-caption text-muted">
               <span
                 className="absolute -translate-x-1/2"
@@ -184,9 +186,8 @@ export default function CycleLengths({
               >
                 {TYPICAL_MAX}
               </span>
-              <span className="absolute right-0">{scale} days</span>
             </div>
-            <span />
+            <span className="hidden sm:block" />
           </div>
 
           {/* The full list scrolls inside the card instead of stretching the page */}
@@ -212,9 +213,9 @@ export default function CycleLengths({
 
       <p className="mt-5 text-caption text-muted">
         Each bar is one cycle, from the first day of a period to the first day
-        of the next. The shaded band marks 21 to 35 days. Cycles outside it can
-        be worth mentioning to your clinician. This is a pattern to talk about,
-        not a diagnosis.
+        of the next, drawn on a {scale}-day scale. The shaded band marks 21 to
+        35 days. Cycles outside it can be worth mentioning to your clinician.
+        This is a pattern to talk about, not a diagnosis.
       </p>
     </div>
   );
