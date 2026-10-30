@@ -122,17 +122,3 @@
     display: none;
   }
 }
-
-/* LEGACY — old variable names, kept so un-migrated pages don't break.
-    - Delete this block in the final cleanup step. */
-:root {
-  --cream: #FAF7F2;
-  --cream-dark: #F0EBE1;
-  --olive: #7B8C5A;
-  --olive-dark: #5C6B40;
-  --burgundy: #6B1F32;
-  --burgundy-dark: #5E2A47;
-  --rust: #C4593A;
-  --text-dark: #202B0E;
-  --text-muted: #5A5A50;
-}
