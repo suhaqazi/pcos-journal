@@ -9,6 +9,8 @@ import PillScroll from "@/components/ui/PillScroll";
 import MonthCalendar from "@/components/journal/MonthCalendar";
 import MoodPicker from "@/components/journal/MoodPicker";
 import NotebookPage, { SaveStatus } from "@/components/journal/NotebookPage";
+import SaveBar from "@/components/journal/SaveBar";
+import WeekStrip from "@/components/journal/WeekStrip";
 import {
   Draft,
   EMPTY_DRAFT,
@@ -34,6 +36,7 @@ export default function JournalPage() {
   const [loadedMonths, setLoadedMonths] = useState<string[]>([]);
   const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [showMonth, setShowMonth] = useState(false); // small screens: week or month
 
   const syncedKey = useRef<string | null>(null); // which day the draft was loaded for
   const isDirty = status === "unsaved" || status === "error";
@@ -162,8 +165,62 @@ export default function JournalPage() {
 
   // Page
 
+  // Used by both layouts, so they stay identical
+  const calendar = (
+    <MonthCalendar
+      month={month}
+      selectedKey={selectedKey}
+      today={today}
+      entries={entries}
+      onSelect={selectDate}
+      onMonthChange={(step) => setMonth(addMonths(month, step))}
+    />
+  );
+
+  const moodPicker = user && (
+    <MoodPicker
+      mood={draft.mood}
+      flow={draft.flow}
+      symptoms={draft.symptoms}
+      onMood={(mood) => updateDraft({ mood })}
+      onFlow={(flow) => updateDraft({ flow })}
+      onToggleSymptom={toggleSymptom}
+    />
+  );
+
+  const notebook = (showSave: boolean) =>
+    authLoading ? null : user ? (
+      <NotebookPage
+        dateKey={selectedKey}
+        content={draft.content}
+        onChange={(content) => updateDraft({ content })}
+        status={status}
+        hasEntry={Boolean(entries[selectedKey])}
+        canGoNext={selectedKey < today}
+        onPrev={() => selectDate(addDays(selectedKey, -1))}
+        onNext={() => selectDate(addDays(selectedKey, 1))}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        showSave={showSave}
+      />
+    ) : (
+      <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-title font-black text-ink">Your pages are private</p>
+        <p className="text-body text-muted">
+          Sign in to start writing. Only you will ever be able to read your
+          journal.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button href="/login">Sign in</Button>
+          <Button href="/signup" variant="secondary">
+            Create an account
+          </Button>
+        </div>
+      </div>
+    );
+
   return (
-    <main className="min-h-screen bg-[url('/wallpaper.svg')] bg-cover bg-fixed bg-center bg-no-repeat px-8 pt-8 pb-24">
+    <main className="min-h-screen bg-[url('/wallpaper.svg')] bg-cover bg-fixed bg-center bg-no-repeat px-4 pt-8 pb-28 md:px-8 lg:pb-24">
       {/* Header — positioned against the clipboard as in Figma (label x 122,
           w 733.74; board x 56). The negative margin matches the 50px the
           label's box overlaps the board's box, above the folder. */}
@@ -172,13 +229,14 @@ export default function JournalPage() {
           title="Your journal"
           subtitle="One page for today"
           description="Write what your body did and how you felt. Over time, these pages turn into patterns you can bring to your clinician. Only you can read them."
-          className="md:-mb-[3.71%] md:ml-[4.9%] md:w-[54.44%]"
+          className="lg:-mb-[3.71%] lg:ml-[4.9%] lg:w-[54.44%]"
         />
       </div>
 
-      {/* Clipboard — one SVG, content laid on top. Positions are % of the
-          board, measured from the Figma frame (1347.73 × 1054). */}
-      <div className="relative mx-auto w-full max-w-6xl">
+      {/* Large screens: the clipboard — one SVG, content laid on top.
+          Positions are % of the board, measured from the Figma frame
+          (1347.73 × 1054). */}
+      <div className="relative mx-auto hidden w-full max-w-6xl lg:block">
         <Image
           src="/journalboard.svg"
           alt=""
@@ -190,63 +248,80 @@ export default function JournalPage() {
 
         {/* Left card — calendar, then mood and symptoms */}
         <PillScroll
-          className="absolute top-[20.21%] left-[9.14%] h-[70.11%] w-[28.16%] -rotate-[1.3deg]"
+          className="absolute top-[20.21%] left-[9.14%] h-[70.11%] w-[28.16%]"
           contentClassName="flex flex-col gap-5 pr-4"
         >
-          <MonthCalendar
-            month={month}
-            selectedKey={selectedKey}
-            today={today}
-            entries={entries}
-            onSelect={selectDate}
-            onMonthChange={(step) => setMonth(addMonths(month, step))}
-          />
-          {user && (
-            <MoodPicker
-              mood={draft.mood}
-              flow={draft.flow}
-              symptoms={draft.symptoms}
-              onMood={(mood) => updateDraft({ mood })}
-              onFlow={(flow) => updateDraft({ flow })}
-              onToggleSymptom={toggleSymptom}
-            />
-          )}
+          {calendar}
+          {moodPicker}
         </PillScroll>
 
         {/* Right paper — the notebook page */}
         <div className="absolute top-[17.63%] left-[50.48%] h-[76%] w-[41.85%]">
-          {authLoading ? null : user ? (
-            <NotebookPage
-              dateKey={selectedKey}
-              content={draft.content}
-              onChange={(content) => updateDraft({ content })}
-              status={status}
-              hasEntry={Boolean(entries[selectedKey])}
-              canGoNext={selectedKey < today}
-              onPrev={() => selectDate(addDays(selectedKey, -1))}
-              onNext={() => selectDate(addDays(selectedKey, 1))}
-              onSave={handleSave}
-              onDelete={handleDelete}
-            />
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
-              <p className="text-title font-black text-ink">
-                Your pages are private
-              </p>
-              <p className="text-body text-muted">
-                Sign in to start writing. Only you will ever be able to read
-                your journal.
-              </p>
-              <div className="flex flex-wrap justify-center gap-3">
-                <Button href="/login">Sign in</Button>
-                <Button href="/signup" variant="secondary">
-                  Create an account
-                </Button>
-              </div>
-            </div>
-          )}
+          {notebook(true)}
         </div>
       </div>
+
+      {/* Phones, tablets and small windows: the same pieces, stacked */}
+      <div className="mx-auto mt-8 flex max-w-2xl flex-col gap-8 lg:hidden">
+        {/* Calendar card with binder rings */}
+        <section className="relative rounded-2xl bg-paper px-4 pt-8 pb-5 shadow-[0_4px_10px_rgb(0_0_0/0.12)]">
+          <div
+            className="absolute inset-x-0 -top-3 flex justify-around px-10"
+            aria-hidden="true"
+          >
+            {[0, 1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className="h-6 w-2.5 rounded-full border-2 border-kraft bg-transparent"
+              />
+            ))}
+          </div>
+
+          {showMonth ? (
+            calendar
+          ) : (
+            <WeekStrip
+              selectedKey={selectedKey}
+              today={today}
+              entries={entries}
+              onSelect={selectDate}
+            />
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowMonth(!showMonth)}
+            className="mx-auto mt-3 block cursor-pointer font-hand text-body font-bold text-burgundy underline underline-offset-4"
+          >
+            {showMonth ? "Show this week" : "Show month"}
+          </button>
+        </section>
+
+        {/* Clipboard with the notebook page: fixed height, scrolls inside */}
+        <section className="rounded-2xl bg-kraft p-3 shadow-[0_6px_14px_rgb(0_0_0/0.18)]">
+          <div className="speckle-paper relative h-[65vh] min-h-[26rem] rounded-lg py-6 pr-5 pl-10">
+            {/* Punch holes */}
+            <div
+              className="absolute inset-y-10 left-3 flex flex-col justify-between"
+              aria-hidden="true"
+            >
+              {[0, 1, 2, 3].map((i) => (
+                <span key={i} className="size-2.5 rounded-full bg-kraft" />
+              ))}
+            </div>
+            {notebook(false)}
+          </div>
+        </section>
+
+        {/* Mood, period and symptoms */}
+        {user && (
+          <section className="rounded-2xl bg-paper px-6 pt-2 pb-6 shadow-[0_4px_10px_rgb(0_0_0/0.12)]">
+            {moodPicker}
+          </section>
+        )}
+      </div>
+
+      <SaveBar status={status} onSave={handleSave} />
     </main>
   );
 }

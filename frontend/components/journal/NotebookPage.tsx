@@ -26,6 +26,7 @@ interface NotebookPageProps {
   onNext: () => void;
   onSave: () => void;
   onDelete: () => void;
+  showSave?: boolean; // false on smaller screens, where the SaveBar is used
 }
 
 export default function NotebookPage({
@@ -39,6 +40,7 @@ export default function NotebookPage({
   onNext,
   onSave,
   onDelete,
+  showSave = true,
 }: NotebookPageProps) {
   const textRef = useRef<HTMLTextAreaElement>(null);
 
@@ -99,14 +101,20 @@ export default function NotebookPage({
           ← Prev
         </button>
 
-        <div className="flex flex-col items-center gap-1">
-          <Button size="sm" onClick={onSave} disabled={!canSave}>
-            {status === "saving" ? "Saving..." : "Save page"}
-          </Button>
-          <span role="status" className="h-4 text-caption text-muted">
-            {status !== "saving" && STATUS_TEXT[status]}
+        {showSave ? (
+          <div className="flex flex-col items-center gap-1">
+            <Button size="sm" onClick={onSave} disabled={!canSave}>
+              {status === "saving" ? "Saving..." : "Save page"}
+            </Button>
+            <span role="status" className="h-4 text-caption text-muted">
+              {status !== "saving" && STATUS_TEXT[status]}
+            </span>
+          </div>
+        ) : (
+          <span className="text-caption text-muted">
+            {status === "saved" ? "Saved ✓" : ""}
           </span>
-        </div>
+        )}
 
         <button
           type="button"
