@@ -12,7 +12,8 @@ interface PillScrollProps {
   scrollClassName?: string; // the scrolling area: usually a max height
   contentClassName?: string; // the content: padding, flex, gap
   pillClassName?: string; // where the pill's track sits
-  resetKey?: unknown; // when this changes, jump back to the top
+  resetKey?: unknown; // when this changes, jump to the top (or bottom)
+  scrollTo?: "top" | "bottom"; // "bottom" suits chats: newest message in view
 }
 
 export default function PillScroll({
@@ -22,6 +23,7 @@ export default function PillScroll({
   contentClassName = "",
   pillClassName = "right-0 inset-y-0",
   resetKey,
+  scrollTo = "top",
 }: PillScrollProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -48,9 +50,10 @@ export default function PillScroll({
   }, []);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    const el = scrollRef.current;
+    if (el) el.scrollTop = scrollTo === "bottom" ? el.scrollHeight : 0;
     update();
-  }, [resetKey]);
+  }, [resetKey, scrollTo]);
 
   // The pill needs a positioned parent. Default to "relative", but only if
   // the caller didn't already position the box (e.g. "absolute" on the
