@@ -4,15 +4,7 @@ import WhatsInsideSection from "@/components/landing/WhatsInsideSection";
 
 export default function Home() {
   return (
-    <main
-      style={{
-        backgroundImage: "url('/wallpaper.svg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "fixed",
-      }}
-    >
+    <main className="min-h-screen bg-[url('/wallpaper.svg')] bg-cover bg-fixed bg-center bg-no-repeat">
       <Hero />
       <FeatureSection />
       <WhatsInsideSection />
