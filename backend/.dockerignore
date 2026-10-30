@@ -7,6 +7,7 @@ __pycache__/
 .git/
 .gitignore
 .DS_Store
+cloudrun.env.yaml
 
 # Local-only scripts and data that the running API doesn't need
 *.ipynb

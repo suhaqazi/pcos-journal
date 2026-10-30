@@ -1,0 +1,13 @@
+.gcloudignore
+.git/
+.gitignore
+.env
+.env.*
+cloudrun.env.yaml
+venv/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.ipynb
+data/
