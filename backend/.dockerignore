@@ -1,0 +1,13 @@
+.env
+.env.*
+venv/
+.venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.DS_Store
+
+# Local-only scripts and data that the running API doesn't need
+*.ipynb
+data/
