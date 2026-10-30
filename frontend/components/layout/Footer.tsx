@@ -51,18 +51,20 @@ export default function Footer() {
   return (
     <footer className="bg-linen">
       {/* Dashed divider with a diamond */}
-      <div className="flex items-center px-12 py-8">
+      <div className="flex items-center px-5 py-6 md:px-12 md:py-8">
         <div className="flex-1 border-t border-dashed border-burgundy/40" />
         <div className="mx-4 size-3 rotate-45 bg-burgundy/50" />
         <div className="flex-1 border-t border-dashed border-burgundy/40" />
       </div>
 
-      <div className="grid items-start gap-16 px-8 pt-1 pb-12 md:grid-cols-[1.5fr_1fr_1fr_1fr] md:px-24">
+      {/* Phones: brand on top, link columns two to a row.
+          From md up: brand plus three columns in one row. */}
+      <div className="grid grid-cols-2 items-start gap-x-6 gap-y-8 px-5 pt-1 pb-10 md:grid-cols-[1.5fr_1fr_1fr_1fr] md:gap-16 md:px-24 md:pb-12">
         {/* Brand */}
-        <div>
+        <div className="col-span-2 md:col-span-1">
           <Logo size="lg" stacked className="mb-4 items-start" />
-          <p className="mb-6 max-w-xs text-[0.9375rem] leading-[1.7] text-muted">
-            A warm, private notebook for PCOS - ask gentle questions, keep dated
+          <p className="mb-5 max-w-xs text-small leading-relaxed text-muted md:mb-6 md:text-[0.9375rem]">
+            A warm, private notebook for PCOS — ask gentle questions, keep dated
             entries, and notice your own patterns over time.
           </p>
           <div className="flex items-center gap-4">
@@ -94,15 +96,15 @@ export default function Footer() {
         {/* Link columns */}
         {COLUMNS.map((col) => (
           <div key={col.title}>
-            <p className="mb-5 text-xs font-semibold tracking-[0.1em] text-muted uppercase">
+            <p className="mb-3 text-xs font-semibold tracking-[0.1em] text-muted uppercase md:mb-5">
               {col.title}
             </p>
-            <div className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-2.5 md:gap-3.5">
               {col.links.map((link) => (
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="text-ink/80 transition-colors hover:text-burgundy"
+                  className="text-sm text-ink/80 transition-colors hover:text-burgundy md:text-base"
                 >
                   {link.label}
                 </Link>
@@ -113,7 +115,7 @@ export default function Footer() {
       </div>
 
       {/* Bottom bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-burgundy/10 bg-linen-dark px-8 py-5 text-[0.8125rem] text-muted md:px-24">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-burgundy/10 bg-linen-dark px-5 py-4 text-xs text-muted md:gap-4 md:px-24 md:py-5 md:text-[0.8125rem]">
         <p className="max-w-xl leading-normal">
           Ask Orchid is a supportive companion built on guidelines, not
           professional medical advice. Please talk with a clinician about your

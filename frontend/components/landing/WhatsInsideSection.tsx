@@ -31,28 +31,28 @@ const CARDS = [
 
 export default function WhatsInsideSection() {
   return (
-    <section className="flex flex-col items-center px-4 pt-24 pb-16">
+    <section className="flex flex-col items-center overflow-x-clip px-4 pt-14 pb-12 md:pt-24 md:pb-16">
       <SectionIntro eyebrow="What's inside">
         Everything a <span className="underline-doodle">hard week</span> needs
       </SectionIntro>
 
-      <div className="grid w-full max-w-[82rem] gap-12 px-8 md:grid-cols-2">
+      <div className="grid w-full max-w-[82rem] gap-x-12 gap-y-16 px-2 sm:px-8 md:grid-cols-2">
         {CARDS.map((card) => (
           <div
             key={card.title}
-            className="relative flex flex-col gap-4 rounded-card bg-paper px-[1.9rem] pt-4 pb-6"
+            className="relative flex flex-col gap-4 rounded-[1.75rem] bg-paper px-6 pt-4 pb-6 md:rounded-card md:px-[1.9rem]"
           >
             <Image
               src="/redbookmark.svg"
               alt=""
               width={192}
               height={192}
-              className="pointer-events-none absolute -top-[4.4rem] -left-12 h-auto w-48"
+              className="pointer-events-none absolute -top-12 -left-6 h-auto w-32 md:-top-[4.4rem] md:-left-12 md:w-48"
             />
-            <h3 className="mt-6 text-title leading-tight font-black text-ink">
+            <h3 className="mt-5 text-title leading-tight font-black text-ink md:mt-6">
               {card.title}
             </h3>
-            <p className="grow text-[0.9375rem] leading-relaxed text-stone">
+            <p className="grow text-body leading-relaxed text-stone">
               {card.body}
             </p>
             <Button href={card.href} variant="link" className="mt-2 self-start">

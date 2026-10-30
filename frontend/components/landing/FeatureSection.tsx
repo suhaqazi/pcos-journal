@@ -36,7 +36,7 @@ export default function FeatureSection() {
   return (
     // overflow-x-clip: ribbons hang past the cards, so stop them
     // from making the whole page scroll sideways on small screens
-    <section className="flex flex-col items-center overflow-x-clip px-4 pt-24 pb-16">
+    <section className="flex flex-col items-center overflow-x-clip px-4 pt-14 pb-12 md:pt-24 md:pb-16">
       <SectionIntro
         eyebrow="Three pages, one notebook"
         description="Each part of Ask Orchid does one job well - and they all feed the same quiet record of your health."
@@ -46,11 +46,11 @@ export default function FeatureSection() {
 
       {/* Stacked: long cards, no wider than the intro card above (55rem).
           From xl (1280px): three columns, each at the designed 24rem. */}
-      <div className="grid w-full max-w-[55rem] gap-y-16 px-8 xl:max-w-[83rem] xl:grid-cols-3 xl:gap-x-14">
+      <div className="grid w-full max-w-[55rem] gap-y-16 px-2 sm:px-8 xl:max-w-[83rem] xl:grid-cols-3 xl:gap-x-14">
         {FEATURES.map((f) => (
           <div
             key={f.ribbon}
-            className="relative rounded-card bg-paper px-6 py-8"
+            className="relative rounded-[1.75rem] bg-paper px-6 py-8 md:rounded-card"
           >
             {/* Ribbon anchor */}
             <div className="pointer-events-none absolute top-0 left-0 w-[24rem] origin-top-left max-sm:scale-75">
@@ -75,9 +75,7 @@ export default function FeatureSection() {
             <h3 className="mt-8 mb-3 text-title leading-tight font-black text-burgundy">
               {f.title}
             </h3>
-            <p className="text-[0.9375rem] leading-relaxed text-stone">
-              {f.body}
-            </p>
+            <p className="text-body leading-relaxed text-stone">{f.body}</p>
           </div>
         ))}
       </div>

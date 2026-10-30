@@ -55,8 +55,8 @@
   --text-title: clamp(1rem, 1.8vw, 1.375rem);
   --text-display: clamp(1.25rem, 2.5vw, 1.75rem);
   --text-intro: clamp(0.9375rem, 1.4vw, 1.25rem);
-  --text-headline: clamp(2rem, 4vw, 3rem);
-  --text-hero: clamp(2rem, 4.5vw, 4.0625rem);
+  --text-headline: clamp(1.625rem, 4vw, 3rem);
+  --text-hero: clamp(1.75rem, 4.5vw, 4.0625rem);
 
   /* Shapes */
   --radius-card: 2.5rem;
