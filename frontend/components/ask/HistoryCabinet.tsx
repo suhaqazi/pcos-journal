@@ -92,11 +92,37 @@ export default function HistoryCabinet({
           Questions you ask will be filed here, one folder per day.
         </p>
       ) : (
-        <div className="grid gap-3 md:h-[28rem] md:grid-cols-[2fr_3fr]">
-          {/* Left — one folder per day. Each folder is 6rem tall but
+        <div className="grid gap-0 md:h-[28rem] md:grid-cols-[2fr_3fr] md:gap-3">
+          {/* Small screens: a row of day tabs that scrolls sideways,
+              sitting on top of the opened day like folder tabs */}
+          <div className="no-scrollbar -mb-px flex gap-1 overflow-x-auto md:hidden">
+            {days.map((day) => {
+              const isActive = day.key === activeDay.key;
+              return (
+                <button
+                  key={day.key}
+                  onClick={() => openDay(day.key)}
+                  aria-pressed={isActive}
+                  style={day.style}
+                  className={`shrink-0 cursor-pointer rounded-t-lg bg-(--bg) px-3.5 font-hand text-small font-bold whitespace-nowrap text-(--fg) transition-[padding] ${
+                    isActive
+                      ? "pt-2.5 pb-1.5 underline underline-offset-4"
+                      : "pt-1.5 pb-1 opacity-85"
+                  }`}
+                >
+                  {day.date.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Larger screens — one folder per day. Each folder is 6rem tall but
               overlaps the next by 2rem, so only its tab and a strip show. */}
           <PillScroll
-            className="md:h-full"
+            className="hidden md:block md:h-full"
             scrollClassName="max-h-[28rem]"
             contentClassName="pr-5"
           >
@@ -131,7 +157,7 @@ export default function HistoryCabinet({
           {/* Right — the opened day, in its folder's color */}
           <div
             style={activeDay.style}
-            className="overflow-hidden rounded-xl bg-(--bg) text-(--fg)"
+            className="overflow-hidden rounded-xl rounded-tl-none bg-(--bg) text-(--fg) md:rounded-tl-xl"
           >
             <PillScroll
               resetKey={activeDay.key}

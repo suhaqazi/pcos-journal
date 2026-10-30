@@ -8,6 +8,8 @@ import { AnswerData } from "@/lib/answer";
 import { askOrchid } from "@/lib/api";
 import Button from "@/components/ui/Button";
 import PillScroll from "@/components/ui/PillScroll";
+import AnswerBody from "@/components/ask/AnswerBody";
+import MobileChat, { Turn } from "@/components/ask/MobileChat";
 import HistoryCabinet, { HistoryItem } from "@/components/ask/HistoryCabinet";
 import GuestHistoryPrompt from "@/components/ask/GuestHistoryPrompt";
 
@@ -24,6 +26,9 @@ const SUGGESTED_QUESTIONS = [
   "What are the Rotterdam criteria?",
 ];
 
+const DESCRIPTION =
+  "No jargon, no judgement. Ask anything about PCOS and get a warm, plain-language answer, then take the parts that matter to your clinician.";
+
 function getRandomQuestions() {
   return [...SUGGESTED_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 4);
 }
@@ -37,6 +42,10 @@ export default function AskPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null); // questions left today
+
+  // The chat on smaller screens keeps every question asked this visit
+  const [thread, setThread] = useState<Turn[]>([]);
+  const [chatDraft, setChatDraft] = useState("");
 
   const { user, loading: authLoading } = useAuth();
 
@@ -63,16 +72,31 @@ export default function AskPage() {
     loadHistory();
   }, [user]);
 
-  async function handleSubmit() {
-    if (!question.trim() || question.length > 500) return;
+  // Shared by the desktop board and the small-screen chat
+  async function ask(text: string) {
+    const q = text.trim();
+    if (!q || q.length > 500 || loading) return;
+
+    const turnId = Date.now();
     setLoading(true);
     setAnswer(null);
     setSources([]);
+    setThread((prev) => [
+      ...prev,
+      { id: turnId, question: q, answer: null, sources: [] },
+    ]);
 
-    const result = await askOrchid(question);
+    const result = await askOrchid(q);
     if (result.remaining != null) setRemaining(result.remaining);
     setAnswer(result.answer);
     setSources(result.sources);
+    setThread((prev) =>
+      prev.map((t) =>
+        t.id === turnId
+          ? { ...t, answer: result.answer, sources: result.sources }
+          : t,
+      ),
+    );
     setLoading(false);
 
     // Only real answers go into a signed-in user's history, not error notices
@@ -81,7 +105,7 @@ export default function AskPage() {
         .from("questions")
         .insert({
           user_id: user.id,
-          question,
+          question: q,
           answer: JSON.stringify(result.answer),
           sources: result.sources,
         })
@@ -90,6 +114,17 @@ export default function AskPage() {
 
       if (saved) setHistory((prev) => [saved, ...prev]);
     }
+  }
+
+  // Desktop board keeps the question in the whiteboard; the chat clears its box
+  function handleSubmit() {
+    void ask(question);
+  }
+
+  function handleChatSend() {
+    const text = chatDraft;
+    setChatDraft("");
+    void ask(text);
   }
 
   function resetQuestion() {
@@ -101,34 +136,40 @@ export default function AskPage() {
 
   return (
     <main className="min-h-screen bg-[url('/wallpaper.svg')] bg-cover bg-fixed bg-center bg-no-repeat">
-      {/* Hero header */}
-      <div className="flex justify-center py-16">
-        <div className="relative inline-block">
+      {/* Hero header - same design as before, now scaling with the screen.
+          The label is a container, so its text is sized in cqw (% of the
+          label's width) and always fits. On phones, the description moves
+          below the label, where it stays readable. */}
+      <div className="flex flex-col items-center px-4 pt-12 pb-10 md:pt-16 md:pb-16">
+        <div className="@container relative w-full max-w-[720px]">
           <Image
             src="/askpagehead.svg"
             alt=""
             width={720}
             height={180}
-            className="block"
+            priority
+            className="block h-auto w-full"
           />
           <div className="absolute top-[65%] left-1/2 w-4/5 -translate-x-1/2 -translate-y-1/2 text-center">
-            <h1 className="mb-2 text-display leading-tight font-black text-ink">
-              Ask the question you've been{" "}
+            <h1 className="text-[5.5cqw] leading-tight font-black text-ink md:mb-[1.1cqw] md:text-[3.9cqw]">
+              Ask the question you&apos;ve been{" "}
               <span className="text-burgundy">holding</span>
             </h1>
-            <p className="text-body leading-normal text-burgundy">
-              No jargon, no judgement. Ask anything about PCOS and get a warm,
-              plain-language answer — then take the parts that matter to your
-              clinician.
+            <p className="hidden text-[2.1cqw] leading-normal text-burgundy md:block">
+              {DESCRIPTION}
             </p>
           </div>
         </div>
+        <p className="mt-3 w-full max-w-[720px] rounded-xl bg-paper/90 px-4 py-3 text-center text-small text-burgundy md:hidden">
+          {DESCRIPTION}
+        </p>
       </div>
 
       {/* Cork board — one SVG for the whole board, text boxes laid on top.
           Positions are % of the board, measured from the Figma frame
           (1321.65 × 886), so everything scales together. */}
-      <div className="flex justify-center px-8 pb-28">
+      {/* Large screens: the cork board */}
+      <div className="hidden justify-center px-8 pb-28 lg:flex">
         <div className="relative w-full max-w-6xl">
           <Image
             src="/corkboard.svg"
@@ -208,22 +249,7 @@ export default function AskPage() {
 
             {answer && !loading && (
               <>
-                <p className="font-display text-lead leading-snug font-bold italic text-ink">
-                  {answer.summary}
-                </p>
-
-                {answer.points.map((point) => (
-                  <div key={point.heading} className="text-body">
-                    <p className="mb-0.5 font-bold text-burgundy">
-                      {point.heading}
-                    </p>
-                    <p className="leading-relaxed text-ink">{point.body}</p>
-                  </div>
-                ))}
-
-                <p className="text-small leading-snug text-muted italic">
-                  {answer.closing}
-                </p>
+                <AnswerBody answer={answer} />
 
                 <Button
                   variant="link"
@@ -267,9 +293,23 @@ export default function AskPage() {
         </div>
       </div>
 
+      {/* Phones, tablets and small windows: the chat */}
+      <div className="mx-auto max-w-3xl px-4 pb-16 md:px-8 lg:hidden">
+        <MobileChat
+          thread={thread}
+          draft={chatDraft}
+          onDraftChange={setChatDraft}
+          onSend={handleChatSend}
+          suggested={suggested}
+          loading={loading}
+          isGuest={!user}
+          remaining={remaining}
+        />
+      </div>
+
       {/* History — nothing until we know who's signed in, so signed-in
           users don't see the guest prompt flash first */}
-      <div className="mx-auto max-w-6xl px-8 pb-24">
+      <div className="mx-auto max-w-6xl px-4 pb-24 md:px-8">
         {authLoading ? null : user ? (
           <HistoryCabinet history={history} loading={historyLoading} />
         ) : (
