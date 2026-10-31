@@ -26,7 +26,7 @@ const gaegu = Gaegu({
 });
 
 export const metadata: Metadata = {
-  title: "Bloom Journal",
+  title: "Ask Orchid",
   description: "Your PCOS companion. Informed, personal, yours.",
 };
 
